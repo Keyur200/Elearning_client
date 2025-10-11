@@ -1,40 +1,244 @@
-import React from 'react'
-import { FaRegUserCircle, FaSearch } from 'react-icons/fa'
-import { HiMiniBars3 } from 'react-icons/hi2'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../Context/UserContext'
-import toast from 'react-hot-toast'
-const Navbar = ({ toggle, setToggle }) => {
-    const [user, setUser] = useAuth()
-    const navigate = useNavigate()
-    
-    return (
-        <div className='flex items-center justify-between py-5 px-20'>
-            <Link to={'/'} className='text3xl font-semibold '>e-Leaning</Link>
-            
-            <div onClick={() => setToggle(true)} className={`flex gap-3 relative items-center border border-[#DDDDDD] py-2 px-3 rounded-full cursor-pointer hover:shadow-lg ${toggle ? 'shadow-lg' : ''}`}>
-                <HiMiniBars3 className='' />
+import React, { useState, useEffect } from "react";
+import { HiOutlineMenuAlt3, HiOutlineUserCircle } from "react-icons/hi";
+import { FaBell } from "react-icons/fa";
+import { useAuth } from "../Context/UserContext";
+import { useNavigate } from "react-router-dom";
+import NavItems from "../utils/NavItems";
+import Login from "../Pages/Login";
+import Register from "../Pages/Register";
 
-                <div className={`${!user ? 'px-3 py-3' :'py-2 px-3'} bg-black text-center text-white py-2 px-3 rounded-full text-[9px] uppercase`}>{user && user?.name?.substring(0, 1)}</div>
+const Navbar = () => {
+  const [active, setActive] = useState(false);
+  const [openSidebar, setOpenSidebar] = useState(false);
+  const [userDropdown, setUserDropdown] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
 
-                {
-                    toggle && !user && (
-                        <div className='absolute flex gap-2 flex-col z-50 w-[200px] items-start top-14 right-0 shadow-lg py-3  rounded-xl  border border-[#DDDDDD] bg-white'>
-                            <Link to={'/login'} className='hover:bg-[#f7f6f6] w-full text-start py-2 px-4 font-semibold hover:text-[#FF385C]'>Login</Link>
-                            <Link to={'/register'} className='hover:bg-[#f7f6f6] w-full text-start py-2 px-4 font-semibold hover:text-[#FF385C]'>Create a new account</Link>
-                        </div>
-                    )
-                }
-                {
-                    toggle && user && (
-                        <div className='absolute flex gap-2 flex-col z-50 w-[200px] items-start top-14 right-0 shadow-lg py-3  rounded-xl  border border-[#DDDDDD] bg-white'>
-                            <Link to={'/profile'} className='hover:bg-[#f7f6f6] w-full text-start py-2 px-4 font-semibold hover:text-[#FF385C]'>Profile</Link>
-                        </div>
-                    )
-                }
+  const [user, setUser] = useAuth();
+  const navigate = useNavigate();
+
+  // Scroll effect for shadow
+  useEffect(() => {
+    const handleScroll = () => setActive(window.scrollY > 85);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close sidebar on overlay click
+  const handleSidebarClose = (e) => {
+    if (e.target.id === "overlay") setOpenSidebar(false);
+  };
+
+  // Logout function
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:5000/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null);
+      setUserDropdown(false);
+      navigate("/"); // Redirect to home after logout
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
+
+  // Redirect to dashboard based on role
+  const handleDashboardRedirect = () => {
+    if (user.role === "Admin") navigate("/admin");
+    else if (user.role === "Instructor") navigate("/instructor");
+    else navigate("/profile");
+    setUserDropdown(false);
+    setOpenSidebar(false);
+  };
+
+  return (
+    <>
+      {/* Navbar */}
+      <nav
+        className={`w-full top-0 fixed z-50 bg-white transition-all ${
+          active ? "shadow-lg" : "shadow-md"
+        }`}
+      >
+        <div className="w-[95%] 800px:w-[90%] mx-auto flex items-center justify-between h-20 px-4 text-black">
+          {/* Logo */}
+          <div
+            className="text-2xl font-bold cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            ELearning
+          </div>
+
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-6">
+            <NavItems isMobile={false} />
+          </div>
+
+          {/* Right icons */}
+          <div className="flex items-center gap-4">
+            {/* Notification Icon */}
+            <div className="relative cursor-pointer">
+              <FaBell size={22} />
+              <span className="absolute top-0 right-0 w-5 h-5 text-xs flex items-center justify-center rounded-full bg-green-500 text-white">
+                0
+              </span>
             </div>
-        </div>
-    )
-}
 
-export default Navbar
+            {/* User Dropdown */}
+            <div className="relative">
+              {user ? (
+                <div
+                  onClick={() => setUserDropdown(!userDropdown)}
+                  className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center cursor-pointer font-bold text-lg"
+                >
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              ) : (
+                <HiOutlineUserCircle
+                  size={28}
+                  className="cursor-pointer"
+                  onClick={() => setUserDropdown(!userDropdown)}
+                />
+              )}
+
+              {userDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-300 rounded-xl shadow-lg flex flex-col z-50">
+                  {user ? (
+                    <>
+                      {/* Role-based Dashboard Link */}
+                      {(user.role === "Admin" || user.role === "Instructor") && (
+                        <button
+                          className="px-4 py-2 text-left hover:bg-gray-100"
+                          onClick={handleDashboardRedirect}
+                        >
+                          {user.role === "Admin"
+                            ? "Admin Dashboard"
+                            : "Instructor Dashboard"}
+                        </button>
+                      )}
+
+                      {/* Profile */}
+                      <button
+                        className="px-4 py-2 text-left hover:bg-gray-100"
+                        onClick={() => {
+                          navigate("/profile");
+                          setUserDropdown(false);
+                        }}
+                      >
+                        Profile
+                      </button>
+
+                      {/* Logout */}
+                      <button
+                        className="px-4 py-2 text-left hover:bg-gray-100"
+                        onClick={handleLogout}
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Login/Register for non-logged-in users */}
+                      <button
+                        className="px-4 py-2 text-left hover:bg-gray-100"
+                        onClick={() => {
+                          setShowLogin(true);
+                          setUserDropdown(false);
+                        }}
+                      >
+                        Login
+                      </button>
+                      <button
+                        className="px-4 py-2 text-left hover:bg-gray-100"
+                        onClick={() => {
+                          setShowRegister(true);
+                          setUserDropdown(false);
+                        }}
+                      >
+                        Register
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Menu Icon */}
+            <div className="md:hidden">
+              <HiOutlineMenuAlt3
+                size={28}
+                className="cursor-pointer"
+                onClick={() => setOpenSidebar(true)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Sidebar */}
+        {openSidebar && (
+          <div
+            id="overlay"
+            className="fixed inset-0 bg-black/30 z-50 flex justify-end"
+            onClick={handleSidebarClose}
+          >
+            <div className="w-[70%] h-full bg-white p-6 flex flex-col gap-6">
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setOpenSidebar(false)}
+                  className="text-black font-bold text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Mobile Dashboard link */}
+              {user && (user.role === "Admin" || user.role === "Instructor") && (
+                <button
+                  className="px-4 py-2 hover:bg-gray-100 rounded-lg text-black"
+                  onClick={handleDashboardRedirect}
+                >
+                  {user.role === "Admin"
+                    ? "Admin Dashboard"
+                    : "Instructor Dashboard"}
+                </button>
+              )}
+
+              {/* Mobile Nav Items */}
+              <NavItems isMobile={true} />
+
+              {/* Footer */}
+              <div className="mt-auto text-black">
+                <p className="text-sm">© 2025 ELearning</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Login Modal */}
+      {showLogin && (
+        <Login
+          closeModal={() => setShowLogin(false)}
+          openRegister={() => {
+            setShowLogin(false);
+            setShowRegister(true);
+          }}
+        />
+      )}
+
+      {/* Register Modal */}
+      {showRegister && (
+        <Register
+          closeModal={() => setShowRegister(false)}
+          openLogin={() => {
+            setShowRegister(false);
+            setShowLogin(true);
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+export default Navbar;

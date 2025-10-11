@@ -1,64 +1,116 @@
-import React, { useState } from 'react'
-import { FaMailBulk, FaRegUser } from 'react-icons/fa'
-import { IoMdLocate } from 'react-icons/io'
-import { IoLocateOutline, IoLocationOutline } from 'react-icons/io5'
-import { MdKey, MdLocationCity, MdOutlineEmail } from 'react-icons/md'
-import axios from 'axios'
-import {toast} from 'react-hot-toast'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState } from "react";
+import { FaRegUser } from "react-icons/fa";
+import { MdKey, MdOutlineEmail } from "react-icons/md";
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
-const Register = () => {
-  const [name,setname] = useState()
-  const [email,setemail] = useState()
-  const [pass,setpass] = useState()
-  const [roleId,setroleId] = useState()
-  const navigate = useNavigate()
+const Register = ({ closeModal, openLogin }) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+
     try {
-      const {data} = await axios.post('http://localhost:5000/auth/register', {
-        name,email,password:pass,roleId
-      })
-      if(data.error){
-        toast.error(data.error)
-      }
-      else{
-        toast.success("Registarion successfully.")
-        navigate('/login')
+      const { data } = await axios.post(
+        "http://localhost:5000/auth/register",
+        { name, email, password: pass }
+      );
+
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success("Registration successful! Please login.",{ position: "top-center" });
+        // Close register modal and open login modal
+        closeModal();
+        openLogin();
       }
     } catch (error) {
-      console.log(error)
+      console.error(error);
+      toast.error("Something went wrong. Please try again.",{ position: "top-center" });
     }
-  }
+  };
+
   return (
-    <div className='flex w-auto h-auto items-center justify-center pt-10'>
-    <form onSubmit={handleSubmit} className='border border-[#e9e7e7] rounded-xl shadow-xl flex flex-col py-10 px-8'>
-      <h2 className='text-2xl font-bold pb-5'>Create New Account</h2>
-      <div className='flex items-center pb-1 px-3 pt-5 gap-5 border-b-2 border-b-[#eeecec]'>
-        <FaRegUser className='text-[#ff385c] text-lg' />
-        <input type="text" value={name} onChange={(e)=>setname(e.target.value)} placeholder='Username' className='outline-none' />
-      </div>
-      <div className='flex items-center pb-1 px-3 pt-5 gap-5 border-b-2 border-b-[#eeecec]'>
-        <MdOutlineEmail  className='text-[#ff385c] text-lg' />
-        <input type="email" value={email} onChange={(e)=>setemail(e.target.value)} placeholder='Email' className='outline-none' />
-      </div>
-      <div className='flex items-center pb-1 px-3 pt-5 gap-5 border-b-2 border-b-[#eeecec]'>
-        <MdKey  className='text-[#ff385c] text-lg' />
-        <input type="password" value={pass} onChange={(e)=>setpass(e.target.value)}  placeholder='Password' className='outline-none' />
-      </div>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-xl w-full max-w-md relative shadow-lg text-black">
+        {/* Close Button */}
+        <button
+          className="absolute top-3 right-3 text-black font-bold text-xl"
+          onClick={closeModal}
+        >
+          ✕
+        </button>
 
-      <div className='flex items-center pb-1 px-3 pt-5 gap-5 border-b-2 border-b-[#eeecec]'>
-        <MdKey  className='text-[#ff385c] text-lg' />
-        <input type="text" value={roleId} onChange={(e)=>setroleId(e.target.value)}  placeholder='Role ' className='outline-none' />
+        <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
+
+        {/* Register Form */}
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          {/* Full Name */}
+          <div className="flex items-center gap-3 border border-gray-300 rounded-lg px-4 py-2 focus-within:ring-2 focus-within:ring-[#ff385c]">
+            <FaRegUser className="text-[#ff385c] text-xl" />
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Full Name"
+              className="outline-none w-full py-2 text-gray-700"
+              required
+            />
+          </div>
+
+          {/* Email */}
+          <div className="flex items-center gap-3 border border-gray-300 rounded-lg px-4 py-2 focus-within:ring-2 focus-within:ring-[#ff385c]">
+            <MdOutlineEmail className="text-[#ff385c] text-xl" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="outline-none w-full py-2 text-gray-700"
+              required
+            />
+          </div>
+
+          {/* Password */}
+          <div className="flex items-center gap-3 border border-gray-300 rounded-lg px-4 py-2 focus-within:ring-2 focus-within:ring-[#ff385c]">
+            <MdKey className="text-[#ff385c] text-xl" />
+            <input
+              type="password"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              placeholder="Password"
+              className="outline-none w-full py-2 text-gray-700"
+              required
+            />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="bg-[#ff385c] hover:bg-[#fbdee2] hover:text-[#ff385c] transition-colors duration-300 text-white font-semibold rounded-full py-3 text-lg mt-2"
+          >
+            Register
+          </button>
+        </form>
+
+        {/* Switch to Login */}
+        <p className="text-center mt-4 text-sm">
+          Already have an account?{" "}
+          <span
+            onClick={() => {
+              closeModal();
+              openLogin();
+            }}
+            className="text-[#ff385c] cursor-pointer font-semibold"
+          >
+            Login
+          </span>
+        </p>
       </div>
+    </div>
+  );
+};
 
-      <button type='submit' className='bg-[#ff385c] border-2 border-[#ff385c] transition transform duration-500 hover:bg-[#fbdee2] hover:text-[#ff385c] py-3 px-5 text-xl text-white font-semibold rounded-full mt-8' >Create</button>
-      <div className='flex gap-1 w-full justify-center pt-1 text-sm '>Already have an account? <Link to={'/login'} className='font-semibold text-[#ff385c]'>Login</Link></div>
-    </form>
-
-  </div>
-  )
-}
-
-export default Register
+export default Register;
