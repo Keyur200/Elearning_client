@@ -1,0 +1,31 @@
+/* Sidebar background */
+.pro-sidebar {
+  background-color: #ffffff !important;
+  border-right: 1px solid #e5e7eb;
+}
+
+/* Active menu item */
+.pro-menu-item.active {
+  background-color: #e0e7ff !important;
+  color: #2563eb !important;
+}
+
+/* Hover effect for menu items */
+.pro-inner-item:hover {
+  color: #2563eb !important;
+}
+
+/* Remove background for icons */
+.pro-icon-wrapper {
+  background-color: transparent !important;
+}
+
+/* Profile section text */
+.admin-profile-text {
+  color: #000;
+}
+
+/* Sidebar collapse toggle */
+.pro-menu-item h2 {
+  color: #000 !important;
+}

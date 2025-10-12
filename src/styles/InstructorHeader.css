@@ -1,0 +1,81 @@
+/* InstructorHeader.css */
+
+.instructor-header {
+  height: 60px;
+  width: 100%;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+}
+
+.instructor-header .notification {
+  margin-right: 20px;
+  position: relative;
+  cursor: pointer;
+}
+
+.instructor-header .notification .dot {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  border-radius: 50%;
+}
+
+.instructor-header .instructor-dropdown {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.instructor-header .instructor-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: #1d4ed8;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.instructor-header .instructor-name {
+  color: #000;
+  font-weight: 500;
+}
+
+.instructor-header .dropdown-menu {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  overflow: hidden;
+  width: 150px;
+  z-index: 1000;
+}
+
+.instructor-header .dropdown-item {
+  padding: 10px;
+  cursor: pointer;
+  color: #000;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background 0.2s;
+}
+
+.instructor-header .dropdown-item:hover {
+  background-color: #f3f4f6;
+}

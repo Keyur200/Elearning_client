@@ -1,30 +1,35 @@
-// App.jsx
 import { useState } from "react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./Components/Navbar";
-import Home from "./Pages/Home.jsx";
-import AdminDashboard from "./Admin/Pages/AdminDashboard.jsx";
-import InstructorDashboard from "./Instructor/Pages/InstructorDashboard.jsx";
-import Profile from "./Pages/Profile.jsx";
-import Register from "./Pages/Register";
+import Home from "./Pages/Home";
+import Profile from "./Pages/Profile";
 import Login from "./Pages/Login";
-import ProtectedRoute from "./Components/ProtectedRoute.jsx";
+import Register from "./Pages/Register";
+import ProtectedRoute from "./Components/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
+
+// Import sub-apps
+import AdminApp from "./Admin/AdminApp";
+import InstructorApp from "./Instructor/InstructorApp";
 
 function AppWrapper() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const location = useLocation();
 
-  // Pages where Navbar should be hidden
+  // Hide navbar on dashboards
   const hideNavbarPaths = ["/admin", "/instructor", "/profile"];
-  const showNavbar = !hideNavbarPaths.includes(location.pathname);
+  const showNavbar = !hideNavbarPaths.some((path) =>
+    location.pathname.startsWith(path)
+  );
 
-  // Navbar height for padding
-  const NAVBAR_HEIGHT = 80; // matches h-20 (20*4=80px)
+  const NAVBAR_HEIGHT = 80;
 
   return (
     <>
+      {/* Toast Notifications */}
+      <Toaster position="top-center" reverseOrder={false} />
+
       {/* Navbar */}
       {showNavbar && (
         <Navbar
@@ -35,33 +40,11 @@ function AppWrapper() {
         />
       )}
 
-      {/* Main Content */}
+      {/* Page Content */}
       <div style={{ paddingTop: showNavbar ? NAVBAR_HEIGHT : 0 }}>
         <Routes>
-          {/* Public Route */}
+          {/* 🏠 Public/User Routes */}
           <Route path="/" element={<Home />} />
-
-          {/* Admin Dashboard */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute role="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Instructor Dashboard */}
-          <Route
-            path="/instructor"
-            element={
-              <ProtectedRoute role="instructor">
-                <InstructorDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* User Profile */}
           <Route
             path="/profile"
             element={
@@ -70,10 +53,30 @@ function AppWrapper() {
               </ProtectedRoute>
             }
           />
+
+          {/* 🧑‍💼 Admin Sub-App */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute role="admin">
+                <AdminApp />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 🧑‍🏫 Instructor Sub-App */}
+          <Route
+            path="/instructor/*"
+            element={
+              <ProtectedRoute role="instructor">
+                <InstructorApp />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
 
-      {/* Login Modal */}
+      {/* Modals */}
       {showLogin && (
         <Login
           closeModal={() => setShowLogin(false)}
@@ -84,7 +87,6 @@ function AppWrapper() {
         />
       )}
 
-      {/* Register Modal */}
       {showRegister && (
         <Register
           closeModal={() => setShowRegister(false)}
@@ -94,9 +96,6 @@ function AppWrapper() {
           }}
         />
       )}
-
-      {/* Toasts */}
-      <Toaster position="top-right" />
     </>
   );
 }

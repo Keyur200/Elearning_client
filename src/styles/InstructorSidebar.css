@@ -1,0 +1,17 @@
+.pro-sidebar {
+  background-color: #ffffff !important;
+  border-right: 1px solid #e5e7eb;
+}
+
+.pro-menu-item.active {
+  background-color: #e0e7ff !important;
+  color: #2563eb !important;
+}
+
+.pro-inner-item:hover {
+  color: #2563eb !important;
+}
+
+.pro-icon-wrapper {
+  background-color: transparent !important;
+}
