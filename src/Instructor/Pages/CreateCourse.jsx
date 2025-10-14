@@ -56,7 +56,7 @@ const CreateCourse = () => {
     }
 
     if (!thumbnailFile) {
-      Swal.fire("Error", "Thumbnail is required (file or URL).", "error");
+      Swal.fire("Error", "Thumbnail is required.", "error");
       return;
     }
 
@@ -67,9 +67,9 @@ const CreateCourse = () => {
       formData.append("categoryId", course.categoryId);
       formData.append("price", course.price);
       formData.append("estimatedPrice", course.estimatedPrice);
-      formData.append("tags", course.tags);
-      formData.append("benefits", course.benefits);
       formData.append("level", course.level);
+      formData.append("tags", course.tags); // comma-separated
+      formData.append("benefits", course.benefits); // comma-separated
       formData.append("thumbnail", thumbnailFile);
 
       const res = await axios.post(
@@ -77,11 +77,9 @@ const CreateCourse = () => {
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true, // important to send cookie for authentication
+          withCredentials: true, // Send JWT cookie for authentication
         }
       );
-
-      console.log("Course created:", res.data);
 
       Swal.fire("Success", "Course created successfully!", "success");
 
@@ -172,7 +170,7 @@ const CreateCourse = () => {
           </div>
         </div>
 
-        {/* Level & Thumbnail Upload */}
+        {/* Level & Thumbnail */}
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
             <label className="block mb-2 font-medium">Level</label>
@@ -236,9 +234,7 @@ const CreateCourse = () => {
             />
           </div>
           <div>
-            <label className="block mb-2 font-medium">
-              Benefits (comma separated)
-            </label>
+            <label className="block mb-2 font-medium">Benefits (comma separated)</label>
             <input
               type="text"
               name="benefits"

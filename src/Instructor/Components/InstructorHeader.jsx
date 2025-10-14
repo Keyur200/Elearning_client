@@ -6,9 +6,28 @@ import "../../styles/InstructorHeader.css";
 const InstructorHeader = ({ instructor }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState(null); // <-- profile image state
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
   const navigate = useNavigate();
+
+  // Fetch profile image
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!instructor) return;
+      try {
+        const res = await fetch("http://localhost:5000/api/profile", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setProfileImage(data.image || null);
+      } catch (err) {
+        console.error("Failed to fetch profile image", err);
+      }
+    };
+    fetchProfile();
+  }, [instructor]);
 
   const firstLetter = instructor?.name
     ? instructor.name.charAt(0).toUpperCase()
@@ -131,6 +150,7 @@ const InstructorHeader = ({ instructor }) => {
               width: "35px",
               height: "35px",
               borderRadius: "50%",
+              overflow: "hidden",
               backgroundColor: "#1d4ed8",
               color: "#fff",
               display: "flex",
@@ -139,7 +159,15 @@ const InstructorHeader = ({ instructor }) => {
               fontWeight: "bold",
             }}
           >
-            {firstLetter}
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              firstLetter
+            )}
           </div>
           <span style={{ color: "#000", fontWeight: 500 }}>
             {instructor?.name || "Instructor"}
@@ -171,9 +199,7 @@ const InstructorHeader = ({ instructor }) => {
               onMouseEnter={(e) =>
                 (e.currentTarget.style.backgroundColor = "#f3f4f6")
               }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#fff")
-              }
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fff")}
               onClick={() => navigate("/profile")}
             >
               Profile
@@ -189,9 +215,7 @@ const InstructorHeader = ({ instructor }) => {
               onMouseEnter={(e) =>
                 (e.currentTarget.style.backgroundColor = "#f3f4f6")
               }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#fff")
-              }
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#fff")}
             >
               Logout
             </div>

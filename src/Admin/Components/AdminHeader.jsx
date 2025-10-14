@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaBell } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import "../../styles/InstructorHeader.css";
+import "../../styles/InstructorHeader.css"; // you can rename it to Header.css if needed
 
 const AdminHeader = ({ admin }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState(null); // <-- Profile image state
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
   const navigate = useNavigate();
@@ -14,20 +15,35 @@ const AdminHeader = ({ admin }) => {
     ? admin.name.charAt(0).toUpperCase()
     : "A";
 
+  // Fetch admin profile image
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!admin) return;
+      try {
+        const res = await fetch("http://localhost:5000/api/profile", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setProfileImage(data.image || null);
+      } catch (err) {
+        console.error("Failed to fetch profile image", err);
+      }
+    };
+    fetchProfile();
+  }, [admin]);
+
   // Correct Logout function
   const handleLogout = async () => {
     try {
-      // Clear frontend stored login info
       localStorage.removeItem("user"); // remove token or user info
 
-      // Call backend logout API (if using cookie-based auth)
       await fetch("http://localhost:5000/auth/logout", {
         method: "POST",
         credentials: "include",
       });
-      window.location.href = "/"; // redirect to home and refresh
-
-      navigate("/"); 
+      window.location.href = "/";
+      navigate("/");
     } catch (err) {
       console.error("Logout failed", err);
     }
@@ -137,6 +153,7 @@ const AdminHeader = ({ admin }) => {
               width: "35px",
               height: "35px",
               borderRadius: "50%",
+              overflow: "hidden",
               backgroundColor: "#2563eb",
               color: "#fff",
               display: "flex",
@@ -145,7 +162,15 @@ const AdminHeader = ({ admin }) => {
               fontWeight: "bold",
             }}
           >
-            {firstLetter}
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Admin"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{firstLetter}</span>
+            )}
           </div>
           <span style={{ color: "#000", fontWeight: 500 }}>
             {admin?.name || "Admin"}
