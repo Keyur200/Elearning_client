@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import AdminSidebar from "./Components/AdminSidebar";
 import AdminHeader from "./Components/AdminHeader";
@@ -8,37 +8,48 @@ import ManageCourses from "./Pages/ManageCourses";
 import Reports from "./Pages/Reports";
 import FAQ from "./Pages/FAQ";
 
-const AdminApp = () => {
-  const admin = {
-    name: "Admin User",
-    role: "Administrator",
-    // avatar: "/images/admin.jpg", // optional
-  };
+// 🟢 Category Pages
+import CategoryList from "./Pages/Category/CategoryList";
+import AddCategory from "./Pages/Category/AddCategory";
+import EditCategory from "./Pages/Category/EditCategory";
+import Category from "./Pages/Category";
 
-  // Logout function
+const AdminApp = () => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const admin = { name: "Admin User", role: "Administrator" };
+
   const handleLogout = () => {
     localStorage.removeItem("user");
     window.location.href = "/";
   };
 
+  const sidebarWidth = isCollapsed ? 80 : 250;
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <AdminSidebar admin={admin} onLogout={handleLogout} />
+      <AdminSidebar
+        admin={admin}
+        onLogout={handleLogout}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
+      />
 
-      {/* Main Content */}
-      <div className="flex-1 ml-[250px]">
-        {/* Header */}
+      <div
+        className="flex-1 transition-all duration-300"
+        style={{ marginLeft: sidebarWidth }}
+      >
         <AdminHeader admin={admin} onLogout={handleLogout} />
 
-        {/* Page Content */}
-        <div className="p-6 mt-[60px]"> {/* mt-[60px] to push below header */}
+        <div className="p-6 mt-[60px]">
           <Routes>
             <Route path="/" element={<AdminDashboard />} />
             <Route path="/manage-users" element={<ManageUsers />} />
             <Route path="/manage-courses" element={<ManageCourses />} />
-            <Route path="/faq" element={<FAQ />} />
+            <Route path="/category/*" element={<Category />} />
+
             <Route path="/reports" element={<Reports />} />
+            <Route path="/faq" element={<FAQ />} />
           </Routes>
         </div>
       </div>

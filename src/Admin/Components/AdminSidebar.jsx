@@ -1,37 +1,35 @@
-import React, { useState } from "react";
+import React from "react";
 import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
 import {
   FaHome,
   FaUsers,
   FaBookOpen,
   FaChartBar,
-  FaCog,
   FaSignOutAlt,
   FaQuestionCircle,
   FaChevronLeft,
   FaChevronRight,
+  FaLayerGroup,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import "../../styles/AdminSidebar.css";
 
-const AdminSidebar = ({ admin }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selected, setSelected] = useState("Dashboard");
+const AdminSidebar = ({ admin, isCollapsed, setIsCollapsed }) => {
+  const [selected, setSelected] = React.useState("Dashboard");
 
   const firstLetter = admin?.name
     ? admin.name.charAt(0).toUpperCase()
     : "A";
 
-  // Menu Items
   const menuItems = [
     { name: "Dashboard", icon: <FaHome />, path: "/admin" },
     { name: "Manage Users", icon: <FaUsers />, path: "/admin/manage-users" },
     { name: "Manage Courses", icon: <FaBookOpen />, path: "/admin/manage-courses" },
+    { name: "Category", icon: <FaLayerGroup />, path: "/admin/category" },
     { name: "Reports", icon: <FaChartBar />, path: "/admin/reports" },
     { name: "FAQ", icon: <FaQuestionCircle />, path: "/admin/faq" },
   ];
 
-  // Logout function
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:5000/auth/logout", {
@@ -52,15 +50,22 @@ const AdminSidebar = ({ admin }) => {
         left: 0,
         top: 0,
         zIndex: 1000,
-        backgroundColor: "#ffffff",
-        boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)",
+        backgroundColor: "#fff",
+        boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
+        transition: "width 0.3s ease",
       }}
     >
-      <Sidebar collapsed={isCollapsed} backgroundColor="#ffffff">
+      <Sidebar collapsed={isCollapsed} backgroundColor="#fff">
         <Menu>
-          {/* Collapse Toggle */}
+          {/* Toggle Button */}
           <MenuItem
-            icon={isCollapsed ? <FaChevronRight color="#000" /> : <FaChevronLeft color="#000" />}
+            icon={
+              isCollapsed ? (
+                <FaChevronRight color="#000" />
+              ) : (
+                <FaChevronLeft color="#000" />
+              )
+            }
             onClick={() => setIsCollapsed(!isCollapsed)}
             style={{ color: "#000", margin: "10px 0 20px 0" }}
           >
@@ -71,13 +76,10 @@ const AdminSidebar = ({ admin }) => {
             )}
           </MenuItem>
 
-          {/* Profile Section */}
+          {/* Profile */}
           {!isCollapsed && (
             <div className="text-center mb-5 text-black">
-              <div
-                className="mx-auto flex items-center justify-center rounded-full border-4 border-black w-20 h-20 text-3xl font-bold bg-gray-200"
-                style={{ color: "#000" }}
-              >
+              <div className="mx-auto flex items-center justify-center rounded-full border-4 border-black w-20 h-20 text-3xl font-bold bg-gray-200">
                 {firstLetter}
               </div>
               <h3 className="mt-2 text-base font-semibold">
@@ -89,9 +91,13 @@ const AdminSidebar = ({ admin }) => {
             </div>
           )}
 
-          {/* Dynamic Menu Items */}
+          {/* Menu Items */}
           {menuItems.map((item) => (
-            <Link key={item.name} to={item.path} style={{ textDecoration: "none" }}>
+            <Link
+              key={item.name}
+              to={item.path}
+              style={{ textDecoration: "none" }}
+            >
               <MenuItem
                 icon={item.icon}
                 active={selected === item.name}
