@@ -15,7 +15,11 @@ import {
   Button,
   TextField,
   MenuItem,
-  InputAdornment
+  InputAdornment,
+  Modal,
+  Card,
+  CardMedia,
+  Grid,
 } from "@mui/material";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import PublishIcon from "@mui/icons-material/Publish";
@@ -32,10 +36,12 @@ export default function MyCourses() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState("");
   const [message, setMessage] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [open, setOpen] = useState(false);
 
   const navigate = useNavigate();
 
-  // Fetch instructor courses
+  // Fetch courses on mount
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -43,7 +49,7 @@ export default function MyCourses() {
   const fetchCourses = async () => {
     try {
       const res = await fetch("http://localhost:5000/api/mycourses", {
-        credentials: "include", // ✅ send HttpOnly cookie automatically
+        credentials: "include",
       });
 
       if (res.status === 401) {
@@ -55,15 +61,16 @@ export default function MyCourses() {
       if (!res.ok) throw new Error("Failed to fetch courses");
 
       const data = await res.json();
-      setCourses(data.courses || []); // Use the correct array from backend
+      setCourses(data.courses || []);
       setFiltered(data.courses || []);
-      if (!data.courses || data.courses.length === 0) setMessage("No courses found.");
+      if (!data.courses || data.courses.length === 0)
+        setMessage("No courses found.");
     } catch (err) {
       setMessage(err.message || "Error fetching courses");
     }
   };
 
-  // Search & sort
+  // Search & Sort
   const handleSearchSort = useCallback(() => {
     let temp = [...courses];
     if (searchTerm) {
@@ -80,22 +87,24 @@ export default function MyCourses() {
 
   useEffect(() => handleSearchSort(), [handleSearchSort]);
 
-  // Pagination handlers
   const handleChangePage = (e, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (e) => {
     setRowsPerPage(parseInt(e.target.value, 10));
     setPage(0);
   };
 
-  // Toggle publish/unpublish
+  // Publish / Unpublish course
   const togglePublish = async (course) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/coursepublish/${course._id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isPublished: !course.isPublished }),
-      });
+      const res = await fetch(
+        `http://localhost:5000/api/coursepublish/${course._id}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isPublished: !course.isPublished }),
+        }
+      );
 
       if (res.status === 401) {
         Swal.fire("Unauthorized", "Please login again.", "error");
@@ -119,6 +128,17 @@ export default function MyCourses() {
     }
   };
 
+  // Open course modal
+  const handleViewCourse = (course) => {
+    setSelectedCourse(course);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedCourse(null);
+  };
+
   return (
     <Paper sx={{ width: "98%", p: 2 }}>
       <Typography variant="h5" sx={{ mb: 2 }}>
@@ -126,6 +146,7 @@ export default function MyCourses() {
       </Typography>
       <Divider sx={{ mb: 2 }} />
 
+      {/* Search & Sort */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={2}
@@ -169,6 +190,7 @@ export default function MyCourses() {
 
       {message && <Typography color="error">{message}</Typography>}
 
+      {/* Courses Table */}
       <TableContainer>
         <Table stickyHeader>
           <TableHead>
@@ -203,11 +225,9 @@ export default function MyCourses() {
                         size="small"
                         variant="outlined"
                         sx={{ mr: 1 }}
-                        onClick={() =>
-                          navigate(`/instructor/edit-course/${c._id}`)
-                        }
+                        onClick={() => handleViewCourse(c)}
                       >
-                        Edit
+                        View
                       </Button>
                       <Button
                         size="small"
@@ -237,6 +257,111 @@ export default function MyCourses() {
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
+
+      {/* Course Details Modal */}
+      <Modal open={open} onClose={handleClose}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: { xs: "90%", md: 700 },
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 3,
+            maxHeight: "90vh",
+            overflowY: "auto",
+          }}
+        >
+          {selectedCourse && (
+            <>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={5}>
+                  <Card sx={{ borderRadius: 2 }}>
+                    <CardMedia
+                      component="img"
+                      image={selectedCourse.thumbnail || "/default-course.jpg"}
+                      alt={selectedCourse.title}
+                      sx={{ height: 200, objectFit: "cover" }}
+                    />
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={7}>
+                  <Typography variant="h5" fontWeight="bold" gutterBottom>
+                    {selectedCourse.title}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
+                    {selectedCourse.description}
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Category: {selectedCourse.categoryId?.name || "N/A"}
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Level: {selectedCourse.level || "Beginner"}
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Price: ₹{selectedCourse.price}
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                    Published: {selectedCourse.isPublished ? "Yes" : "No"}
+                  </Typography>
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Benefits
+              </Typography>
+              <ul>
+                {(Array.isArray(selectedCourse.benefits)
+                  ? selectedCourse.benefits
+                  : typeof selectedCourse.benefits === "string"
+                  ? selectedCourse.benefits.split(",")
+                  : []
+                ).map((b, i) => (
+                  <li key={i}>
+                    <Typography variant="body2">{b}</Typography>
+                  </li>
+                ))}
+              </ul>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                justifyContent="flex-end"
+              >
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() =>
+                    navigate(`/instructor/edit-course/${selectedCourse._id}`)
+                  }
+                >
+                  Edit Course Details
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() =>
+                    navigate(`/instructor/edit-videos/${selectedCourse._id}`)
+                  }
+                >
+                  Edit Course Videos
+                </Button>
+              </Stack>
+            </>
+          )}
+        </Box>
+      </Modal>
     </Paper>
   );
 }

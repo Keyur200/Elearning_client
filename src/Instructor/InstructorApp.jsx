@@ -8,8 +8,10 @@ import MyCourses from "./Pages/MyCourses";
 import Students from "./Pages/Students";
 import FAQ from "./Pages/FAQ";
 import Settings from "./Pages/Settings";
-import AddVideo from "./Pages/AddVideo"; // <-- import AddVideo page
+import AddVideo from "./Pages/AddVideo"; 
+import EditVideo from "./Pages/EditVideo"; // <-- Import EditVideo page
 import PreviewCourse from "./Pages/PreviewCourse";
+import EditCourse from "./Pages/EditCourse";
 
 const InstructorApp = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -55,11 +57,13 @@ const InstructorApp = () => {
             <Route path="/students" element={<Students />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/settings" element={<Settings />} />
-            
-            {/* New route for adding videos to a course */}
-            <Route path="/add-video/:courseId" element={<AddVideo />} />
-            <Route path="/preview-course/:courseId" element={<PreviewCourse />} />
 
+            {/* Video routes */}
+            <Route path="/add-video/:courseId" element={<AddVideo />} />
+            <Route path="/edit-videos/:courseId" element={<EditVideo />} /> {/* EditVideo route */}
+            
+            <Route path="/preview-course/:courseId" element={<PreviewCourse />} />
+            <Route path="/edit-course/:courseId" element={<EditCourse />} />
           </Routes>
         </div>
       </div>

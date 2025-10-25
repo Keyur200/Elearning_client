@@ -10,7 +10,8 @@ const PreviewCourse = () => {
   const [course, setCourse] = useState(null);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [publishing, setPublishing] = useState(false); // for button loading
+  const [publishing, setPublishing] = useState(false);
+  const [saving, setSaving] = useState(false); // For Save button loading
 
   useEffect(() => {
     const fetchPreviewCourse = async () => {
@@ -55,7 +56,6 @@ const PreviewCourse = () => {
       );
 
       Swal.fire("Success", res.data.message, "success");
-      // Redirect to My Courses page after publishing/unpublishing
       navigate("/instructor/my-courses");
     } catch (err) {
       Swal.fire(
@@ -68,6 +68,41 @@ const PreviewCourse = () => {
     }
   };
 
+  const handleSave = async () => {
+    if (!course) return;
+    setSaving(true);
+
+    try {
+      // Example: Save updated course info (title, description, videos order, etc.)
+      await axios.put(
+        `http://localhost:5000/api/course/${course._id}`,
+        {
+          title: course.title,
+          description: course.description,
+          videos: videos.map(v => ({
+            _id: v._id,
+            title: v.title,
+            description: v.description,
+            order: v.order,
+            isPreview: v.isPreview
+          })),
+        },
+        { withCredentials: true }
+      );
+
+      Swal.fire("Success", "Course changes saved successfully!", "success");
+      navigate("/instructor/my-courses");
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to save changes",
+        "error"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <div className="p-6 text-center">Loading course...</div>;
   if (!course)
     return <div className="p-6 text-center text-red-600">Course not found.</div>;
@@ -77,19 +112,32 @@ const PreviewCourse = () => {
       {/* Course Header */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold">{course.title}</h1>
-        <button
-          onClick={handlePublishToggle}
-          disabled={publishing}
-          className={`px-4 py-2 rounded-md text-white ${
-            course.isPublished ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
-          }`}
-        >
-          {publishing
-            ? "Updating..."
-            : course.isPublished
-            ? "Unpublish"
-            : "Publish"}
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={handlePublishToggle}
+            disabled={publishing}
+            className={`px-4 py-2 rounded-md text-white ${
+              course.isPublished ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+            }`}
+          >
+            {publishing
+              ? "Updating..."
+              : course.isPublished
+              ? "Unpublish"
+              : "Publish"}
+          </button>
+
+          {/* Show Save button only if course is published */}
+          {course.isPublished && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {saving ? "Saving..." : "Save"}
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="text-gray-700 mb-2">{course.description}</p>

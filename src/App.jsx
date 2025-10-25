@@ -11,6 +11,7 @@ import { Toaster } from "react-hot-toast";
 // Import sub-apps
 import AdminApp from "./Admin/AdminApp";
 import InstructorApp from "./Instructor/InstructorApp";
+import CourseDetails from "./Pages/CourseDetails";
 
 function AppWrapper() {
   const [showLogin, setShowLogin] = useState(false);
@@ -45,6 +46,7 @@ function AppWrapper() {
         <Routes>
           {/* 🏠 Public/User Routes */}
           <Route path="/" element={<Home />} />
+          <Route path="/course/:id" element={<CourseDetails />} />
           <Route
             path="/profile"
             element={
@@ -53,6 +55,7 @@ function AppWrapper() {
               </ProtectedRoute>
             }
           />
+          
 
           {/* 🧑‍💼 Admin Sub-App */}
           <Route
