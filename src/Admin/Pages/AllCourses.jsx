@@ -1,14 +1,31 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  Paper, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, TablePagination, Typography,
-  Divider, Box, Stack, TextField, MenuItem, InputAdornment, Button
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Typography,
+  Divider,
+  Box,
+  Stack,
+  Button,
+  TextField,
+  MenuItem,
+  InputAdornment,
 } from "@mui/material";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
 import PublishIcon from "@mui/icons-material/Publish";
 import UnpublishedIcon from "@mui/icons-material/DoNotDisturbOn";
+import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
+import axios from "axios";
+// import { useNavigate } from "react-router-dom";
+import CourseDetailsPopup from "../Components/CoursePreviewPopup.jsx";
 
 export default function AllCourses() {
   const [courses, setCourses] = useState([]);
@@ -18,110 +35,160 @@ export default function AllCourses() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState("");
   const [message, setMessage] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [open, setOpen] = useState(false);
 
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
-  // Fetch instructor courses
   useEffect(() => {
     fetchCourses();
   }, []);
 
   const fetchCourses = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/courses", {
-        credentials: "include",
+      const res = await axios.get("http://localhost:5000/api/courses", {
+        withCredentials: true,
       });
-
-      if (res.status === 401) {
-        Swal.fire("Unauthorized", "Please login to access this page.", "error");
-        navigate("/login");
-        return;
-      }
-
-      if (!res.ok) throw new Error("Failed to fetch courses");
-      const data = await res.json();
-      setCourses(data);
-      setFiltered(data);
-      if (data.length === 0) setMessage("No courses found.");
+      const data = res.data;
+      setCourses(data.courses || []);
+      setFiltered(data.courses || []);
+      if (!data.courses?.length) setMessage("No courses found.");
     } catch (err) {
-      setMessage(err.message || "Error fetching courses");
+      setMessage(err.response?.data?.message || "Error fetching courses");
     }
   };
 
-  // Search & sort
   const handleSearchSort = useCallback(() => {
     let temp = [...courses];
-    if (searchTerm) temp = temp.filter(c => c.title.toLowerCase().includes(searchTerm.toLowerCase()));
-    if (sortKey === "title") temp.sort((a, b) => a.title.localeCompare(b.title));
+    if (searchTerm) {
+      temp = temp.filter((c) =>
+        c.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (sortKey === "title") {
+      temp.sort((a, b) => a.title.localeCompare(b.title));
+    }
     setFiltered(temp);
     setPage(0);
   }, [courses, searchTerm, sortKey]);
 
   useEffect(() => handleSearchSort(), [handleSearchSort]);
 
-  // Pagination
   const handleChangePage = (e, newPage) => setPage(newPage);
-  const handleChangeRowsPerPage = e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); };
+  const handleChangeRowsPerPage = (e) => {
+    setRowsPerPage(parseInt(e.target.value, 10));
+    setPage(0);
+  };
 
-  // Toggle publish/unpublish
   const togglePublish = async (course) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/coursepublish/${course._id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isPublished: !course.isPublished })
-      });
+      const res = await axios.patch(
+        `http://localhost:5000/api/course/publish/${course._id}`,
+        { isPublished: !course.isPublished },
+        { withCredentials: true }
+      );
 
-      if (res.status === 401) {
-        Swal.fire("Unauthorized", "Please login again.", "error");
-        navigate("/login");
-        return;
-      }
+      setCourses((prev) =>
+        prev.map((c) => (c._id === course._id ? res.data.course : c))
+      );
 
-      if (!res.ok) throw new Error("Failed to update course");
-
-      const data = await res.json();
-      setCourses(prev => prev.map(c => c._id === course._id ? data.course : c));
       Swal.fire(
         "Success",
         `Course ${course.isPublished ? "unpublished" : "published"} successfully`,
         "success"
       );
     } catch (err) {
-      Swal.fire("Error", err.message, "error");
+      Swal.fire("Error", err.response?.data?.message || "Something went wrong", "error");
     }
+  };
+
+  const handleDelete = async (courseId) => {
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "This will permanently delete the course, its sections, and videos!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await axios.delete(`http://localhost:5000/api/course/${courseId}`, {
+        withCredentials: true,
+      });
+
+      Swal.fire("Deleted!", "The course was deleted successfully.", "success");
+      setCourses((prev) => prev.filter((c) => c._id !== courseId));
+      setFiltered((prev) => prev.filter((c) => c._id !== courseId));
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to delete course",
+        "error"
+      );
+    }
+  };
+
+  const handleViewCourse = (course) => {
+    setSelectedCourse(course);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedCourse(null);
   };
 
   return (
     <Paper sx={{ width: "98%", p: 2 }}>
-      <Typography variant="h5" sx={{ mb: 2 }}>All Courses</Typography>
+      <Typography variant="h5" sx={{ mb: 2 }}>
+        All Courses
+      </Typography>
       <Divider sx={{ mb: 2 }} />
 
+      {/* Search & Sort */}
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
         <TextField
           label="Search by title"
           size="small"
           value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
         />
+
         <TextField
           select
           label="Sort by"
           size="small"
           value={sortKey}
-          onChange={e => setSortKey(e.target.value)}
+          onChange={(e) => setSortKey(e.target.value)}
           sx={{ width: 200 }}
         >
           <MenuItem value="">None</MenuItem>
           <MenuItem value="title">Title (A-Z)</MenuItem>
         </TextField>
+
         <Box sx={{ flexGrow: 1 }} />
+        {/* <Button
+          variant="contained"
+          endIcon={<AddCircleIcon />}
+          onClick={() => navigate("/instructor/create-course")}
+        >
+          Add Course
+        </Button> */}
       </Stack>
 
       {message && <Typography color="error">{message}</Typography>}
 
+      {/* Courses Table */}
       <TableContainer>
         <Table stickyHeader>
           <TableHead>
@@ -137,29 +204,53 @@ export default function AllCourses() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">No courses found.</TableCell>
+                <TableCell colSpan={6} align="center">
+                  No courses found.
+                </TableCell>
               </TableRow>
             ) : (
-              filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((c, i) => (
-                <TableRow key={c._id}>
-                  <TableCell>{page * rowsPerPage + i + 1}</TableCell>
-                  <TableCell>{c.title}</TableCell>
-                  <TableCell>{c.categoryId?.name || "N/A"}</TableCell>
-                  <TableCell>{c.price}</TableCell>
-                  <TableCell>{c.isPublished ? "Yes" : "No"}</TableCell>
-                  <TableCell>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color={c.isPublished ? "warning" : "success"}
-                      startIcon={c.isPublished ? <UnpublishedIcon /> : <PublishIcon />}
-                      onClick={() => togglePublish(c)}
-                    >
-                      {c.isPublished ? "Unpublish" : "Publish"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              filtered
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((c, i) => (
+                  <TableRow key={c._id}>
+                    <TableCell>{page * rowsPerPage + i + 1}</TableCell>
+                    <TableCell>{c.title}</TableCell>
+                    <TableCell>{c.categoryId?.name || "N/A"}</TableCell>
+                    <TableCell>₹{c.price}</TableCell>
+                    <TableCell>{c.isPublished ? "Yes" : "No"}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        sx={{ mr: 1 }}
+                        onClick={() => handleViewCourse(c)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color={c.isPublished ? "warning" : "success"}
+                        startIcon={
+                          c.isPublished ? <UnpublishedIcon /> : <PublishIcon />
+                        }
+                        onClick={() => togglePublish(c)}
+                        sx={{ mr: 1 }}
+                      >
+                        {c.isPublished ? "Unpublish" : "Publish"}
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDelete(c._id)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
             )}
           </TableBody>
         </Table>
@@ -173,6 +264,13 @@ export default function AllCourses() {
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
+      />
+
+      {/* ✅ Course Preview Popup */}
+      <CourseDetailsPopup
+        open={open}
+        handleClose={handleClose}
+        selectedCourse={selectedCourse}
       />
     </Paper>
   );

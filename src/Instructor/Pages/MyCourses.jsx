@@ -16,10 +16,6 @@ import {
   TextField,
   MenuItem,
   InputAdornment,
-  Modal,
-  Card,
-  CardMedia,
-  Grid,
 } from "@mui/material";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import PublishIcon from "@mui/icons-material/Publish";
@@ -27,6 +23,7 @@ import UnpublishedIcon from "@mui/icons-material/DoNotDisturbOn";
 import SearchIcon from "@mui/icons-material/Search";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import CourseDetailsPopup from "../Components/CoursePreviewPopup"; // ✅ Import popup component
 
 export default function MyCourses() {
   const [courses, setCourses] = useState([]);
@@ -41,7 +38,6 @@ export default function MyCourses() {
 
   const navigate = useNavigate();
 
-  // Fetch courses on mount
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -51,7 +47,6 @@ export default function MyCourses() {
       const res = await fetch("http://localhost:5000/api/mycourses", {
         credentials: "include",
       });
-
       if (res.status === 401) {
         Swal.fire("Unauthorized", "Please login to access this page.", "error");
         navigate("/login");
@@ -63,14 +58,12 @@ export default function MyCourses() {
       const data = await res.json();
       setCourses(data.courses || []);
       setFiltered(data.courses || []);
-      if (!data.courses || data.courses.length === 0)
-        setMessage("No courses found.");
+      if (!data.courses?.length) setMessage("No courses found.");
     } catch (err) {
       setMessage(err.message || "Error fetching courses");
     }
   };
 
-  // Search & Sort
   const handleSearchSort = useCallback(() => {
     let temp = [...courses];
     if (searchTerm) {
@@ -93,7 +86,6 @@ export default function MyCourses() {
     setPage(0);
   };
 
-  // Publish / Unpublish course
   const togglePublish = async (course) => {
     try {
       const res = await fetch(
@@ -128,7 +120,6 @@ export default function MyCourses() {
     }
   };
 
-  // Open course modal
   const handleViewCourse = (course) => {
     setSelectedCourse(course);
     setOpen(true);
@@ -147,11 +138,7 @@ export default function MyCourses() {
       <Divider sx={{ mb: 2 }} />
 
       {/* Search & Sort */}
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        sx={{ mb: 2 }}
-      >
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
         <TextField
           label="Search by title"
           size="small"
@@ -258,110 +245,12 @@ export default function MyCourses() {
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
 
-      {/* Course Details Modal */}
-      <Modal open={open} onClose={handleClose}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: { xs: "90%", md: 700 },
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 3,
-            maxHeight: "90vh",
-            overflowY: "auto",
-          }}
-        >
-          {selectedCourse && (
-            <>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={5}>
-                  <Card sx={{ borderRadius: 2 }}>
-                    <CardMedia
-                      component="img"
-                      image={selectedCourse.thumbnail || "/default-course.jpg"}
-                      alt={selectedCourse.title}
-                      sx={{ height: 200, objectFit: "cover" }}
-                    />
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={7}>
-                  <Typography variant="h5" fontWeight="bold" gutterBottom>
-                    {selectedCourse.title}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{ mb: 1 }}
-                  >
-                    {selectedCourse.description}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Category: {selectedCourse.categoryId?.name || "N/A"}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Level: {selectedCourse.level || "Beginner"}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Price: ₹{selectedCourse.price}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                    Published: {selectedCourse.isPublished ? "Yes" : "No"}
-                  </Typography>
-                </Grid>
-              </Grid>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Benefits
-              </Typography>
-              <ul>
-                {(Array.isArray(selectedCourse.benefits)
-                  ? selectedCourse.benefits
-                  : typeof selectedCourse.benefits === "string"
-                  ? selectedCourse.benefits.split(",")
-                  : []
-                ).map((b, i) => (
-                  <li key={i}>
-                    <Typography variant="body2">{b}</Typography>
-                  </li>
-                ))}
-              </ul>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={2}
-                justifyContent="flex-end"
-              >
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() =>
-                    navigate(`/instructor/edit-course/${selectedCourse._id}`)
-                  }
-                >
-                  Edit Course Details
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  onClick={() =>
-                    navigate(`/instructor/edit-videos/${selectedCourse._id}`)
-                  }
-                >
-                  Edit Course Videos
-                </Button>
-              </Stack>
-            </>
-          )}
-        </Box>
-      </Modal>
+      {/* ✅ Extracted Popup Component */}
+      <CourseDetailsPopup
+        open={open}
+        handleClose={handleClose}
+        selectedCourse={selectedCourse}
+      />
     </Paper>
   );
 }

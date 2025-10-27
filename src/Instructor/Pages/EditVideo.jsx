@@ -1,264 +1,485 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 const EditVideo = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
 
-  const [videos, setVideos] = useState([]);
   const [courseTitle, setCourseTitle] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [sections, setSections] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch all videos for the course
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/course/${courseId}/videos`,
-          { withCredentials: true }
-        );
-
-        console.log("Fetched course videos:", res.data);
-
-        if (!res.data.videos) {
-          setVideos([]);
-          setCourseTitle(res.data.courseTitle || "");
-        } else {
-          const loadedVideos = res.data.videos
-            .sort((a, b) => a.order - b.order)
-            .map((v, index) => ({
-              ...v,
-              file: null, // for new upload
-              url: v.videoUrl || "",
-              order: index + 1,
-            }));
-          setVideos(loadedVideos);
-          setCourseTitle(res.data.courseTitle || "");
-        }
-      } catch (err) {
-        console.error("Error fetching videos:", err.response || err);
-        Swal.fire(
-          "Error",
-          err.response?.data?.message || "Failed to load course videos",
-          "error"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchVideos();
-  }, [courseId]);
-
-  // Update a field in a video
-  const handleChange = (index, field, value) => {
-    const updated = [...videos];
-    updated[index][field] = value;
-    setVideos(updated);
-  };
-
-  // Handle file selection
-  const handleFileChange = (index, file) => {
-    const updated = [...videos];
-    updated[index].file = file;
-    setVideos(updated);
-  };
-
-  // Remove video
-  const handleRemove = async (index) => {
-    const video = videos[index];
-    if (video._id) {
-      try {
-        const res = await axios.delete(
-          `http://localhost:5000/api/video/${video._id}`,
-          { withCredentials: true }
-        );
-        console.log("Deleted video response:", res.data);
-        Swal.fire("Deleted", "Video deleted successfully", "success");
-      } catch (err) {
-        console.error(err.response || err);
-        Swal.fire("Error", "Failed to delete video", "error");
-        return;
-      }
-    }
-    const updated = [...videos];
-    updated.splice(index, 1);
-    updated.forEach((v, i) => (v.order = i + 1));
-    setVideos(updated);
-  };
-
-  // Move video up
-  const moveUp = (index) => {
-    if (index === 0) return;
-    const updated = [...videos];
-    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-    updated.forEach((v, i) => (v.order = i + 1));
-    setVideos(updated);
-  };
-
-  // Move video down
-  const moveDown = (index) => {
-    if (index === videos.length - 1) return;
-    const updated = [...videos];
-    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-    updated.forEach((v, i) => (v.order = i + 1));
-    setVideos(updated);
-  };
-
-  // Add new video
-  const handleAddVideo = () => {
-    setVideos([
-      ...videos,
-      { title: "", description: "", file: null, url: "", order: videos.length + 1, isPreview: false },
-    ]);
-  };
-
-  // Toggle preview
-  const togglePreview = async (index) => {
-    const video = videos[index];
-    if (!video._id) {
-      Swal.fire("Error", "You must save the video first to mark as preview", "warning");
-      return;
-    }
-
+  // ✅ Fetch course + sections
+  const fetchCourseData = async () => {
     try {
-      const res = await axios.patch(
-        `http://localhost:5000/api/video/${video._id}/preview`,
-        {},
+      const res = await axios.get(
+        `http://localhost:5000/api/course/content/${courseId}`,
         { withCredentials: true }
       );
-      console.log("Marked preview response:", res.data);
-      const updated = [...videos];
-      updated[index].isPreview = true;
-      setVideos(updated);
-      Swal.fire("Success", "Video marked as preview", "success");
+      setCourseTitle(res.data.courseTitle);
+      setSections(res.data.content || []);
     } catch (err) {
-      console.error(err.response || err);
-      Swal.fire("Error", "Failed to mark video as preview", "error");
+      console.error("❌ Error fetching course data:", err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to fetch course or sections.",
+        "error"
+      );
     }
   };
 
-  // Save all videos
-  const handleSubmit = async () => {
-    if (videos.length === 0) {
-      Swal.fire("Error", "Add at least one video", "error");
-      return;
-    }
+  useEffect(() => {
+    fetchCourseData();
+  }, [courseId]);
+
+  // ✅ Add Section
+  const handleAddSection = async () => {
+    const { value: title } = await Swal.fire({
+      title: "Add New Section",
+      input: "text",
+      inputLabel: "Enter section title",
+      inputPlaceholder: "e.g., Introduction, Module 1",
+      showCancelButton: true,
+      confirmButtonText: "Create",
+      inputValidator: (value) => {
+        if (!value) return "Section title cannot be empty!";
+      },
+    });
+
+    if (!title) return;
 
     try {
-      for (const video of videos) {
-        const formData = new FormData();
-        formData.append("title", video.title);
-        formData.append("description", video.description);
-        formData.append("courseId", courseId);
-        formData.append("order", video.order);
-        formData.append("isPreview", video.isPreview);
+      setLoading(true);
+      const order = sections.length + 1;
+      await axios.post(
+        "http://localhost:5000/api/section",
+        { title, courseId, order },
+        { withCredentials: true }
+      );
 
-        if (video.file) formData.append("video", video.file);
-        else if (video.url) formData.append("videoUrl", video.url);
-
-        let res;
-        if (video._id) {
-          res = await axios.put(
-            `http://localhost:5000/api/video/${video._id}`,
-            formData,
-            { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
-          );
-        } else {
-          res = await axios.post(
-            `http://localhost:5000/api/video`,
-            formData,
-            { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
-          );
-        }
-        console.log("Saved video response:", res.data);
-      }
-
-      Swal.fire("Success", "Videos updated successfully", "success");
-      navigate(`/instructor/preview-course/${courseId}`);
+      Swal.fire("Success", "New section added!", "success");
+      await fetchCourseData();
     } catch (err) {
-      console.error(err.response || err);
-      Swal.fire("Error", "Failed to update videos", "error");
+      console.error("❌ Error adding section:", err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to add section.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) return <div className="p-8">Loading videos...</div>;
+  // ✅ Edit Section Title
+  const handleEditSectionTitle = async (sectionId, oldTitle, oldOrder) => {
+    const { value: newTitle } = await Swal.fire({
+      title: "Edit Section Title",
+      input: "text",
+      inputLabel: "Enter a new section title",
+      inputValue: oldTitle,
+      showCancelButton: true,
+      confirmButtonText: "Save",
+      inputValidator: (value) => {
+        if (!value) return "Section title cannot be empty!";
+      },
+    });
 
+    if (!newTitle || newTitle === oldTitle) return;
+
+    try {
+      setLoading(true);
+      await axios.put(
+        `http://localhost:5000/api/section/${sectionId}`,
+        { title: newTitle, order: oldOrder },
+        { withCredentials: true }
+      );
+
+      Swal.fire("Success", "Section title updated!", "success");
+      await fetchCourseData();
+    } catch (err) {
+      console.error("❌ Error updating section title:", err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to update section title.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Delete Section (and reassign videos)
+  const handleDeleteSection = async (sectionId) => {
+    const confirm = await Swal.fire({
+      title: "Delete this section?",
+      text: "Videos will move to the previous section if available.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      setLoading(true);
+      await axios.delete(`http://localhost:5000/api/section/${sectionId}`, {
+        withCredentials: true,
+      });
+
+      Swal.fire("Deleted!", "Section deleted successfully.", "success");
+      await fetchCourseData();
+    } catch (err) {
+      console.error("❌ Error deleting section:", err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to delete section.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Add Video
+  const handleAddVideo = (sectionIndex) => {
+    const updated = [...sections];
+    updated[sectionIndex].videos.push({
+      _id: null,
+      title: "",
+      description: "",
+      file: null,
+      videoUrl: "",
+      isPreview: false,
+      order: updated[sectionIndex].videos.length + 1,
+    });
+    setSections(updated);
+  };
+
+  const handleVideoChange = (sIndex, vIndex, field, value) => {
+    const updated = [...sections];
+    updated[sIndex].videos[vIndex][field] = value;
+    setSections(updated);
+  };
+
+  const handleFileChange = (sIndex, vIndex, file) => {
+    const updated = [...sections];
+    updated[sIndex].videos[vIndex].file = file;
+    updated[sIndex].videos[vIndex].videoUrl = "";
+    setSections(updated);
+  };
+
+  const handleRemoveVideo = (sIndex, vIndex) => {
+    const updated = [...sections];
+    updated[sIndex].videos.splice(vIndex, 1);
+    updated[sIndex].videos.forEach((v, i) => (v.order = i + 1));
+    setSections(updated);
+  };
+
+  // ✅ Delete Video
+  const handleDeleteVideo = async (videoId, sIndex, vIndex) => {
+    const confirm = await Swal.fire({
+      title: "Delete this video?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      setLoading(true);
+      await axios.delete(`http://localhost:5000/api/video/${videoId}`, {
+        withCredentials: true,
+      });
+      handleRemoveVideo(sIndex, vIndex);
+      Swal.fire("Deleted!", "Video deleted successfully.", "success");
+    } catch (err) {
+      console.error("❌ Error deleting video:", err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to delete video.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Move section up/down and update order in DB
+  const moveSection = async (index, direction) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= sections.length) return;
+
+    const updated = [...sections];
+    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+
+    updated.forEach((s, i) => (s.order = i + 1));
+    setSections(updated);
+
+    try {
+      await axios.put(
+        `http://localhost:5000/api/section/${updated[index].sectionId}`,
+        { title: updated[index].sectionTitle, order: updated[index].order },
+        { withCredentials: true }
+      );
+      await axios.put(
+        `http://localhost:5000/api/section/${updated[newIndex].sectionId}`,
+        { title: updated[newIndex].sectionTitle, order: updated[newIndex].order },
+        { withCredentials: true }
+      );
+    } catch (err) {
+      console.error("❌ Failed to update section order:", err);
+    }
+  };
+
+  // ✅ Move video up/down
+  const moveVideo = (sIndex, vIndex, direction) => {
+    const updated = [...sections];
+    const videos = updated[sIndex].videos;
+    const newIndex = vIndex + direction;
+    if (newIndex < 0 || newIndex >= videos.length) return;
+    [videos[vIndex], videos[newIndex]] = [videos[newIndex], videos[vIndex]];
+    videos.forEach((v, i) => (v.order = i + 1));
+    updated[sIndex].videos = videos;
+    setSections(updated);
+  };
+
+  // ✅ Save all videos
+  const handleUpdateAll = async () => {
+    try {
+      setLoading(true);
+      for (const section of sections) {
+        for (const [index, video] of (section.videos || []).entries()) {
+          const formData = new FormData();
+          formData.append("title", video.title);
+          formData.append("description", video.description || "");
+          formData.append("courseId", courseId);
+          formData.append("sectionId", section.sectionId);
+          formData.append("order", index + 1);
+          formData.append("isPreview", video.isPreview);
+          if (video.file) formData.append("video", video.file);
+          else if (video.videoUrl)
+            formData.append("videoUrl", video.videoUrl);
+
+          if (video._id) {
+            await axios.put(
+              `http://localhost:5000/api/video/${video._id}`,
+              formData,
+              {
+                headers: { "Content-Type": "multipart/form-data" },
+                withCredentials: true,
+              }
+            );
+          } else {
+            await axios.post("http://localhost:5000/api/video", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+              withCredentials: true,
+            });
+          }
+        }
+      }
+
+      Swal.fire("✅ Success!", "All videos updated successfully!", "success");
+      navigate(`/instructor/preview-course/${courseId}`);
+    } catch (err) {
+      console.error("❌ Error updating videos:", err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to update videos.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ UI
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <h2 className="text-2xl font-bold mb-6">Edit Videos for "{courseTitle}"</h2>
-
-      {videos.length === 0 && (
-        <p className="text-gray-500 mb-4">No videos found. Add new videos below.</p>
-      )}
-
-      {videos.map((video, index) => (
-        <div key={index} className="bg-white p-4 rounded-xl shadow-md mb-4 relative">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold">Video {video.order}</h3>
-            <div className="space-x-2">
-              <button onClick={() => moveUp(index)} className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">↑</button>
-              <button onClick={() => moveDown(index)} className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">↓</button>
-              <button onClick={() => handleRemove(index)} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">Remove</button>
-              {!video.isPreview && (
-                <button onClick={() => togglePreview(index)} className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600">Preview</button>
-              )}
-              {video.isPreview && (
-                <span className="px-2 py-1 bg-gray-300 text-gray-700 rounded">Preview</span>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1 font-medium">Title</label>
-              <input
-                type="text"
-                value={video.title}
-                onChange={(e) => handleChange(index, "title", e.target.value)}
-                className="w-full border border-gray-300 rounded-md p-2"
-              />
-            </div>
-            <div>
-              <label className="block mb-1 font-medium">Description</label>
-              <input
-                type="text"
-                value={video.description}
-                onChange={(e) => handleChange(index, "description", e.target.value)}
-                className="w-full border border-gray-300 rounded-md p-2"
-              />
-            </div>
-          </div>
-
-          <div className="mt-2">
-            <label className="block mb-1 font-medium">Video File</label>
-            <input
-              type="file"
-              accept="video/*"
-              onChange={(e) => handleFileChange(index, e.target.files[0])}
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-            <span className="text-gray-500 text-sm">Or enter a video URL:</span>
-            <input
-              type="text"
-              value={video.url}
-              onChange={(e) => handleChange(index, "url", e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 mt-1"
-              placeholder="https://..."
-            />
-            <div className="mt-1 text-sm text-gray-400">Current order: {video.order}</div>
-          </div>
+    <div className="min-h-screen bg-gray-100 py-8 px-10">
+      <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-xl p-8">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-800">
+            Edit Sections & Videos in{" "}
+            <span className="text-blue-600">"{courseTitle}"</span>
+          </h2>
+          <button
+            onClick={handleAddSection}
+            disabled={loading}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            ➕ Add New Section
+          </button>
         </div>
-      ))}
 
-      <div className="flex space-x-4 mt-4">
-        <button onClick={handleAddVideo} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Add Another Video</button>
-        <button onClick={handleSubmit} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Update All Videos</button>
+        {sections.map((section, sIndex) => (
+          <div
+            key={section.sectionId || sIndex}
+            className="border border-gray-300 rounded-lg mb-6 bg-gray-50 shadow-sm p-5"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-700">
+                📘 {section.sectionTitle}
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() =>
+                    handleEditSectionTitle(
+                      section.sectionId,
+                      section.sectionTitle,
+                      section.order
+                    )
+                  }
+                  className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                >
+                  ✏️ Rename
+                </button>
+                <button
+                  onClick={() => moveSection(sIndex, -1)}
+                  className="bg-gray-300 text-gray-800 px-2 py-1 rounded hover:bg-gray-400"
+                >
+                  ⬆️
+                </button>
+                <button
+                  onClick={() => moveSection(sIndex, 1)}
+                  className="bg-gray-300 text-gray-800 px-2 py-1 rounded hover:bg-gray-400"
+                >
+                  ⬇️
+                </button>
+                <button
+                  onClick={() => handleDeleteSection(section.sectionId)}
+                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                >
+                  🗑️ Delete
+                </button>
+                <button
+                  onClick={() => handleAddVideo(sIndex)}
+                  className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                >
+                  ➕ Add Video
+                </button>
+              </div>
+            </div>
+
+            {section.videos?.map((video, vIndex) => (
+              <div
+                key={video._id || vIndex}
+                className="bg-white p-4 rounded-lg border border-gray-200 mb-4 shadow-sm"
+              >
+                <div className="flex justify-between mb-2 items-center">
+                  <h4 className="font-medium">
+                    🎬 Video {video.order}: {video.title || "(Untitled)"}
+                  </h4>
+                  <div className="flex gap-2 items-center">
+                    <button onClick={() => moveVideo(sIndex, vIndex, -1)}>⬆️</button>
+                    <button onClick={() => moveVideo(sIndex, vIndex, 1)}>⬇️</button>
+                    <button
+                      onClick={() =>
+                        handleVideoChange(
+                          sIndex,
+                          vIndex,
+                          "isPreview",
+                          !video.isPreview
+                        )
+                      }
+                      className={`px-2 py-1 rounded ${
+                        video.isPreview
+                          ? "bg-green-600 text-white"
+                          : "bg-gray-300 text-gray-700"
+                      }`}
+                    >
+                      {video.isPreview ? "Preview ✅" : "Set Preview"}
+                    </button>
+                    {video._id && (
+                      <button
+                        onClick={() =>
+                          handleDeleteVideo(video._id, sIndex, vIndex)
+                        }
+                        className="text-red-500 font-semibold"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleRemoveVideo(sIndex, vIndex)}
+                      className="text-gray-500 font-semibold"
+                    >
+                      ✖
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    value={video.title || ""}
+                    placeholder="Video Title"
+                    onChange={(e) =>
+                      handleVideoChange(sIndex, vIndex, "title", e.target.value)
+                    }
+                    className="border rounded-lg p-2"
+                  />
+                  <input
+                    type="text"
+                    value={video.description || ""}
+                    placeholder="Description"
+                    onChange={(e) =>
+                      handleVideoChange(
+                        sIndex,
+                        vIndex,
+                        "description",
+                        e.target.value
+                      )
+                    }
+                    className="border rounded-lg p-2"
+                  />
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) =>
+                      handleFileChange(sIndex, vIndex, e.target.files[0])
+                    }
+                    className="border rounded-lg p-2"
+                  />
+                  <input
+                    type="text"
+                    value={video.videoUrl || ""}
+                    placeholder="Video URL"
+                    onChange={(e) =>
+                      handleVideoChange(
+                        sIndex,
+                        vIndex,
+                        "videoUrl",
+                        e.target.value
+                      )
+                    }
+                    className="border rounded-lg p-2"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+
+        {sections.length > 0 && (
+          <div className="text-center mt-8">
+            <button
+              onClick={handleUpdateAll}
+              disabled={loading}
+              className="bg-blue-700 text-white px-8 py-3 rounded-lg hover:bg-blue-800 disabled:opacity-50"
+            >
+              {loading ? "Updating..." : "💾 Save All Changes & Preview"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default EditVideo;
+
+// http://localhost:5173/68ffb0a5806357eed7c7f83b
