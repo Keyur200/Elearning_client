@@ -1,64 +1,91 @@
-import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import {
-  Container,
-  Grid,
-  Typography,
   Box,
   Button,
   CircularProgress,
-  Divider,
-  Card,
+  Container,
+  Typography,
+  Grid,
   CardMedia,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   Chip,
+  Paper,
 } from "@mui/material";
-import { FaUserGraduate, FaCheckCircle } from "react-icons/fa";
-import StarIcon from "@mui/icons-material/Star";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import PlayCircleIcon from "@mui/icons-material/PlayCircle";
+import LockIcon from "@mui/icons-material/Lock";
+import Swal from "sweetalert2";
+import { useParams, useNavigate } from "react-router-dom";
+import PreviewVideoDialog from "../Components/PreviewVideoDialog";
 
 const CourseDetails = () => {
-  const [course, setCourse] = useState(null);
-  const [loading, setLoading] = useState(true);
   const { id } = useParams();
   const navigate = useNavigate();
+  const [courseData, setCourseData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const getCourse = async () => {
+  // Preview video popup
+  const [openPreview, setOpenPreview] = useState(false);
+  const [previewVideos, setPreviewVideos] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const getCourseDetails = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/course/${id}`);
-      console.log("Fetched course data:", res.data);
+      const res = await fetch(`http://localhost:5000/api/courses/details/${id}`, {
+        method: "GET",
+        credentials: "include", // Authentication with cookies
+      });
 
-      setCourse(res.data);
+      if (res.status === 401) {
+        Swal.fire("Unauthorized", "Please login to view this course.", "error");
+        navigate("/login");
+        return;
+      }
+
+      if (!res.ok) throw new Error("Failed to load course details");
+
+      const data = await res.json();
+      setCourseData(data);
     } catch (error) {
-      console.error("Error fetching course:", error);
+      Swal.fire("Error", error.message, "error");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    getCourse();
+    getCourseDetails();
   }, [id]);
+
+  // Popup preview handlers
+  const handleOpenPreview = (videos, clickedIndex) => {
+    const previews = videos.filter((v) => v.isPreview);
+    const index = previews.findIndex((v) => v._id === videos[clickedIndex]._id);
+    setPreviewVideos(previews);
+    setCurrentIndex(index);
+    setOpenPreview(true);
+  };
+
+  const handleClosePreview = () => setOpenPreview(false);
+  const handleNext = () => setCurrentIndex((i) => Math.min(i + 1, previewVideos.length - 1));
+  const handlePrev = () => setCurrentIndex((i) => Math.max(i - 1, 0));
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          height: "70vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <Box sx={{ height: "80vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (!course) {
+  if (!courseData || !courseData.course) {
     return (
       <Box sx={{ textAlign: "center", py: 5 }}>
         <Typography variant="h6" color="text.secondary">
@@ -68,161 +95,103 @@ const CourseDetails = () => {
     );
   }
 
-  // ✅ Instructor data fix
-  const instructorName =
-    course.instructorId?.name ||
-    course.instructor?.name ||
-    "Instructor Name";
-
-  const benefitsList = Array.isArray(course.benefits)
-    ? course.benefits
-    : typeof course.benefits === "string"
-    ? course.benefits
-        .replace(/\r?\n/g, ",")
-        .split(",")
-        .map((b) => b.trim())
-        .filter((b) => b.length > 0)
-    : [];
-
-  const tagsList = Array.isArray(course.tags)
-    ? course.tags
-    : typeof course.tags === "string"
-    ? course.tags.split(",").map((t) => t.trim())
-    : [];
+  const { course, purchased, sections } = courseData;
 
   return (
     <Box sx={{ backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
-      {/* Hero Section */}
-      <Box
-        sx={{
-          backgroundColor: "#1c1d1f",
-          color: "white",
-          py: 6,
-          px: { xs: 2, md: 10 },
-        }}
-      >
-        <Grid container spacing={4} alignItems="flex-start">
-          {/* ✅ Left side - Thumbnail / Video */}
+      {/* ===== Hero Section ===== */}
+      <Box sx={{ backgroundColor: "#1c1d1f", color: "white", py: 8, px: { xs: 2, md: 10 } }}>
+        <Grid container spacing={6} alignItems="center">
+          {/* Left: Course Thumbnail */}
           <Grid item xs={12} md={5}>
-            <Card
-              sx={{
-                backgroundColor: "#000",
-                borderRadius: 2,
-                overflow: "hidden",
-                boxShadow: 6,
-              }}
-            >
+            <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 5 }}>
               <CardMedia
                 component="img"
-                image={course.thumbnail || "/default-course.jpg"}
+                image={course.thumbnail}
                 alt={course.title}
                 sx={{
-                  height: { xs: 240, md: 300 },
+                  width: "100%",
+                  height: { xs: 240, sm: 320, md: 380 },
                   objectFit: "cover",
                 }}
               />
-              <Box sx={{ p: 2, backgroundColor: "#111" }}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  onClick={() => navigate(`/enroll/${course._id}`)}
-                  sx={{
-                    backgroundColor: "#a435f0",
-                    "&:hover": { backgroundColor: "#8710d8" },
-                    borderRadius: 1.5,
-                    py: 1.2,
-                    textTransform: "none",
-                    fontWeight: 600,
-                  }}
-                >
-                  Buy Now
-                </Button>
-                <Typography
-                  variant="body2"
-                  color="#ccc"
-                  sx={{ mt: 1, textAlign: "center" }}
-                >
-                  30-Day Money-Back Guarantee
-                </Typography>
-              </Box>
-            </Card>
+            </Paper>
           </Grid>
 
-          {/* ✅ Right side - Course Info */}
+          {/* Right: Course Info */}
           <Grid item xs={12} md={7}>
             <Typography
               variant="h3"
               fontWeight="bold"
-              sx={{ mb: 2, lineHeight: 1.2 }}
+              sx={{ mb: 2, lineHeight: 1.2, fontSize: { xs: "1.8rem", md: "2.4rem" } }}
             >
               {course.title}
             </Typography>
 
             <Typography variant="h6" color="#d1d7dc" sx={{ mb: 2 }}>
-              {course.description?.slice(0, 200) || ""}
+              {course.description}
             </Typography>
 
-            <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{ color: "#f5c518", fontWeight: 600, mr: 1 }}
-              >
-                4.8
-              </Typography>
-              {[...Array(5)].map((_, i) => (
-                <StarIcon key={i} sx={{ color: "#f5c518", fontSize: 20 }} />
-              ))}
-              <Typography variant="body2" sx={{ ml: 1 }}>
-                (1,240 ratings) • 5,600 students
-              </Typography>
-            </Box>
-
-            <Box display="flex" alignItems="center">
-              <FaUserGraduate style={{ marginRight: 8 }} />
-              <Typography variant="subtitle2">
-                Created by{" "}
-                <span style={{ color: "#c0c4fc" }}>{instructorName}</span>
-              </Typography>
-            </Box>
+            <Typography color="#b5b5b5" sx={{ mb: 0.5 }}>
+              Category: <strong>{course.categoryId?.name}</strong>
+            </Typography>
+            <Typography color="#b5b5b5" sx={{ mb: 0.5 }}>
+              Instructor:{" "}
+              <strong style={{ color: "#c0c4fc" }}>{course.instructorId?.name}</strong>
+            </Typography>
+            <Typography color="#b5b5b5" sx={{ mb: 3 }}>
+              Level: {course.level}
+            </Typography>
 
             <Box sx={{ mt: 2 }}>
-              <Typography variant="body2" color="#d1d7dc">
-                Level: {course.level || "Beginner"}
-              </Typography>
-              <Typography variant="body2" color="#d1d7dc">
-                Last updated: {new Date(course.createdAt).toLocaleDateString()}
-              </Typography>
-            </Box>
-
-            <Box sx={{ mt: 3 }}>
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                sx={{ color: "#fff", mb: 1 }}
-              >
+              <Typography variant="h4" fontWeight="bold">
                 ₹{course.price}
               </Typography>
-              {course.estimatedPrice &&
-                course.estimatedPrice > course.price && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ textDecoration: "line-through", color: "#ccc" }}
-                  >
-                    ₹{course.estimatedPrice}
-                  </Typography>
-                )}
+              {course.estimatedPrice > course.price && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    textDecoration: "line-through",
+                    color: "#ccc",
+                    mb: 2,
+                  }}
+                >
+                  ₹{course.estimatedPrice}
+                </Typography>
+              )}
+
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                sx={{
+                  backgroundColor: "#a435f0",
+                  "&:hover": { backgroundColor: "#8710d8" },
+                  borderRadius: 1.5,
+                  py: 1.3,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  mt: 2,
+                }}
+                onClick={() =>
+                  purchased
+                    ? navigate(`/my-course/${course._id}`)
+                    : navigate(`/enroll/${course._id}`)
+                }
+              >
+                {purchased ? "Continue Learning" : "Buy Now"}
+              </Button>
             </Box>
           </Grid>
         </Grid>
       </Box>
 
-      {/* Main Content */}
+      {/* ===== Course Details ===== */}
       <Container sx={{ py: 6 }}>
-        {/* What You’ll Learn Section */}
-        {benefitsList.length > 0 && (
-          <Box
+        {/* What You’ll Learn */}
+        {course.benefits && course.benefits.length > 0 && (
+          <Paper
             sx={{
               backgroundColor: "#fff",
               borderRadius: 2,
@@ -232,41 +201,32 @@ const CourseDetails = () => {
             }}
           >
             <Typography variant="h5" fontWeight="bold" gutterBottom>
-              What you'll learn
+              What you’ll learn
             </Typography>
             <Grid container spacing={1}>
-              {benefitsList.map((benefit, i) => (
+              {course.benefits.map((b, i) => (
                 <Grid item xs={12} sm={6} key={i}>
-                  <List disablePadding>
-                    <ListItem disableGutters>
-                      <ListItemIcon>
-                        <FaCheckCircle style={{ color: "#2d8659" }} />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Typography variant="body1">{benefit}</Typography>
-                        }
-                      />
-                    </ListItem>
-                  </List>
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    ✅ {b}
+                  </Typography>
                 </Grid>
               ))}
             </Grid>
-          </Box>
+          </Paper>
         )}
 
         {/* Tags */}
-        {tagsList.length > 0 && (
-          <Box sx={{ mb: 4 }}>
+        {course.tags && course.tags.length > 0 && (
+          <Box sx={{ mb: 5 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
               Tags
             </Typography>
-            {tagsList.map((tag, index) => (
+            {course.tags.map((tag, i) => (
               <Chip
-                key={index}
+                key={i}
                 label={tag}
-                variant="outlined"
                 color="primary"
+                variant="outlined"
                 sx={{ mr: 1, mb: 1 }}
               />
             ))}
@@ -275,24 +235,68 @@ const CourseDetails = () => {
 
         <Divider sx={{ my: 4 }} />
 
-        {/* Instructor Section */}
-        <Box>
+        {/* Course Content Accordion */}
+        <Box sx={{ mb: 6 }}>
           <Typography variant="h5" fontWeight="bold" gutterBottom>
-            Instructor
+            Course Content
           </Typography>
-          <Box display="flex" alignItems="center" gap={2}>
-            <FaUserGraduate size={40} color="#1976d2" />
-            <Box>
-              <Typography variant="h6" fontWeight={600}>
-                {instructorName}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Expert Instructor in {course.category?.name || "Technology"}
-              </Typography>
-            </Box>
-          </Box>
+
+          {sections && sections.length > 0 ? (
+            sections.map((section) => (
+              <Accordion key={section._id} sx={{ borderRadius: 2, mb: 2 }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {section.title}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <List>
+                    {section.videos.map((video, idx) => (
+                      <ListItem key={video._id} sx={{ pl: 4 }}>
+                        <ListItemIcon>
+                          {video.isPreview ? (
+                            <PlayCircleIcon color="primary" />
+                          ) : (
+                            <LockIcon color="disabled" />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={video.title}
+                          secondary={`Duration: ${video.duration} min${
+                            video.isPreview ? " (Preview)" : ""
+                          }`}
+                        />
+                        {video.isPreview && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => handleOpenPreview(section.videos, idx)}
+                          >
+                            Watch
+                          </Button>
+                        )}
+                      </ListItem>
+                    ))}
+                  </List>
+                </AccordionDetails>
+              </Accordion>
+            ))
+          ) : (
+            <Typography color="text.secondary">No course content available.</Typography>
+          )}
         </Box>
       </Container>
+
+      {/* ===== Preview Video Dialog ===== */}
+      <PreviewVideoDialog
+        open={openPreview}
+        handleClose={handleClosePreview}
+        previewVideos={previewVideos}
+        currentIndex={currentIndex}
+        handlePrev={handlePrev}
+        handleNext={handleNext}
+      />
     </Box>
   );
 };
