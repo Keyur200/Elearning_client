@@ -31,7 +31,7 @@ export default function MyCourses() {
   const fetchCourses = async () => {
     try {
       const res = await fetch("http://localhost:5000/api/courses", {
-        credentials: "include", // ✅ send HttpOnly cookie automatically
+        credentials: "include",
       });
 
       if (res.status === 401) {
@@ -42,15 +42,15 @@ export default function MyCourses() {
 
       if (!res.ok) throw new Error("Failed to fetch courses");
       const data = await res.json();
-      setCourses(data);
-      setFiltered(data);
-      if (data.length === 0) setMessage("No courses found.");
+      setCourses(data.courses || []);
+      setFiltered(data.courses || []);
+      if ((data.courses || []).length === 0) setMessage("No courses found.");
+
     } catch (err) {
       setMessage(err.message || "Error fetching courses");
     }
   };
 
-  // Search & sort
   const handleSearchSort = useCallback(() => {
     let temp = [...courses];
     if (searchTerm) temp = temp.filter(c => c.title.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -68,7 +68,7 @@ export default function MyCourses() {
   // Toggle publish/unpublish
   const togglePublish = async (course) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/coursepublish/${course._id}`, {
+      const res = await fetch(`http://localhost:5000/api/course/publish/${course._id}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -144,12 +144,13 @@ export default function MyCourses() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filtered.length === 0 ? (
+            {Array.isArray(filtered) && filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} align="center">No courses found.</TableCell>
               </TableRow>
             ) : (
-              filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((c, i) => (
+               Array.isArray(filtered) &&
+              filtered?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((c, i) => (
                 <TableRow key={c._id}>
                   <TableCell>{page * rowsPerPage + i + 1}</TableCell>
                   <TableCell>{c.title}</TableCell>
