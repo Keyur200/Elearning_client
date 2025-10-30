@@ -4,7 +4,7 @@ import AdminSidebar from "./Components/AdminSidebar";
 import AdminHeader from "./Components/AdminHeader";
 import AdminDashboard from "./Pages/AdminDashboard";
 import ManageUsers from "./Pages/ManageUsers";
-import ManageCourses from "./Pages/ManageCourses";
+import ManageCourses from "./Pages/AllCourses";
 import Reports from "./Pages/Reports";
 import FAQ from "./Pages/FAQ";
 
@@ -45,7 +45,7 @@ const AdminApp = () => {
           <Routes>
             <Route path="/" element={<AdminDashboard />} />
             <Route path="/manage-users" element={<ManageUsers />} />
-            <Route path="/manage-courses" element={<ManageCourses />} />
+            <Route path="/All-courses" element={<ManageCourses />} />
             <Route path="/category/*" element={<Category />} />
 
             <Route path="/reports" element={<Reports />} />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
 import {
   FaHome,
@@ -15,20 +15,37 @@ import { Link } from "react-router-dom";
 import "../../styles/AdminSidebar.css";
 
 const AdminSidebar = ({ admin, isCollapsed, setIsCollapsed }) => {
-  const [selected, setSelected] = React.useState("Dashboard");
+  const [selected, setSelected] = useState("Dashboard");
+  const [profileImage, setProfileImage] = useState(null); // <-- Profile image state
 
-  const firstLetter = admin?.name
-    ? admin.name.charAt(0).toUpperCase()
-    : "A";
+  const firstLetter = admin?.name ? admin.name.charAt(0).toUpperCase() : "A";
 
   const menuItems = [
     { name: "Dashboard", icon: <FaHome />, path: "/admin" },
     { name: "Manage Users", icon: <FaUsers />, path: "/admin/manage-users" },
-    { name: "Manage Courses", icon: <FaBookOpen />, path: "/admin/manage-courses" },
+    { name: "All Courses", icon: <FaBookOpen />, path: "/admin/All-courses" },
     { name: "Category", icon: <FaLayerGroup />, path: "/admin/category" },
     { name: "Reports", icon: <FaChartBar />, path: "/admin/reports" },
     { name: "FAQ", icon: <FaQuestionCircle />, path: "/admin/faq" },
   ];
+
+  // Fetch admin profile image dynamically
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!admin) return;
+      try {
+        const res = await fetch("http://localhost:5000/api/profile", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setProfileImage(data.image || null);
+      } catch (err) {
+        console.error("Failed to fetch profile image", err);
+      }
+    };
+    fetchProfile();
+  }, [admin]);
 
   const handleLogout = async () => {
     try {
@@ -57,15 +74,9 @@ const AdminSidebar = ({ admin, isCollapsed, setIsCollapsed }) => {
     >
       <Sidebar collapsed={isCollapsed} backgroundColor="#fff">
         <Menu>
-          {/* Toggle Button */}
+          {/* Collapse Toggle */}
           <MenuItem
-            icon={
-              isCollapsed ? (
-                <FaChevronRight color="#000" />
-              ) : (
-                <FaChevronLeft color="#000" />
-              )
-            }
+            icon={isCollapsed ? <FaChevronRight color="#000" /> : <FaChevronLeft color="#000" />}
             onClick={() => setIsCollapsed(!isCollapsed)}
             style={{ color: "#000", margin: "10px 0 20px 0" }}
           >
@@ -76,11 +87,22 @@ const AdminSidebar = ({ admin, isCollapsed, setIsCollapsed }) => {
             )}
           </MenuItem>
 
-          {/* Profile */}
+          {/* Admin Profile */}
           {!isCollapsed && (
             <div className="text-center mb-5 text-black">
-              <div className="mx-auto flex items-center justify-center rounded-full border-4 border-black w-20 h-20 text-3xl font-bold bg-gray-200">
-                {firstLetter}
+              <div
+                className="mx-auto flex items-center justify-center rounded-full border-4 border-black w-20 h-20 bg-gray-200 overflow-hidden"
+                style={{ color: "#000" }}
+              >
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="Admin"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-3xl font-bold">{firstLetter}</span>
+                )}
               </div>
               <h3 className="mt-2 text-base font-semibold">
                 {admin?.name || "Admin"}
@@ -93,16 +115,16 @@ const AdminSidebar = ({ admin, isCollapsed, setIsCollapsed }) => {
 
           {/* Menu Items */}
           {menuItems.map((item) => (
-            <Link
-              key={item.name}
-              to={item.path}
-              style={{ textDecoration: "none" }}
-            >
+            <Link key={item.name} to={item.path} style={{ textDecoration: "none" }}>
               <MenuItem
                 icon={item.icon}
                 active={selected === item.name}
                 onClick={() => setSelected(item.name)}
-                style={{ color: "#000" }}
+                style={{
+                  color: "#000",
+                  fontWeight: selected === item.name ? "bold" : "normal",
+                  backgroundColor: selected === item.name ? "rgba(0,0,0,0.05)" : "transparent",
+                }}
               >
                 {item.name}
               </MenuItem>
@@ -113,6 +135,7 @@ const AdminSidebar = ({ admin, isCollapsed, setIsCollapsed }) => {
           <MenuItem
             icon={<FaSignOutAlt color="#000" />}
             onClick={handleLogout}
+            style={{ color: "#000", marginTop: "20px" }}
           >
             Logout
           </MenuItem>

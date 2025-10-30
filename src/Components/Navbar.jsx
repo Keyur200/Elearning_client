@@ -13,6 +13,7 @@ const Navbar = () => {
   const [userDropdown, setUserDropdown] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [profileImage, setProfileImage] = useState(null); // <-- new state
 
   const [user, setUser] = useAuth();
   const navigate = useNavigate();
@@ -23,6 +24,25 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Fetch profile image whenever user changes
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      if (!user) return;
+      try {
+        const res = await fetch("http://localhost:5000/api/profile", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setProfileImage(data.image || null);
+      } catch (err) {
+        console.error("Failed to fetch profile image", err);
+      }
+    };
+
+    fetchProfileImage();
+  }, [user]);
 
   // Close sidebar on overlay click
   const handleSidebarClose = (e) => {
@@ -90,9 +110,19 @@ const Navbar = () => {
               {user ? (
                 <div
                   onClick={() => setUserDropdown(!userDropdown)}
-                  className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center cursor-pointer font-bold text-lg"
+                  className="w-10 h-10 rounded-full cursor-pointer overflow-hidden"
                 >
-                  {user.name.charAt(0).toUpperCase()}
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-black text-white flex items-center justify-center font-bold text-lg">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <HiOutlineUserCircle
@@ -106,7 +136,6 @@ const Navbar = () => {
                 <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-300 rounded-xl shadow-lg flex flex-col z-50">
                   {user ? (
                     <>
-                      {/* Role-based Dashboard Link */}
                       {(user.role === "Admin" || user.role === "Instructor") && (
                         <button
                           className="px-4 py-2 text-left hover:bg-gray-100"
@@ -118,7 +147,6 @@ const Navbar = () => {
                         </button>
                       )}
 
-                      {/* Profile */}
                       <button
                         className="px-4 py-2 text-left hover:bg-gray-100"
                         onClick={() => {
@@ -129,7 +157,6 @@ const Navbar = () => {
                         Profile
                       </button>
 
-                      {/* Logout */}
                       <button
                         className="px-4 py-2 text-left hover:bg-gray-100"
                         onClick={handleLogout}
@@ -139,7 +166,6 @@ const Navbar = () => {
                     </>
                   ) : (
                     <>
-                      {/* Login/Register for non-logged-in users */}
                       <button
                         className="px-4 py-2 text-left hover:bg-gray-100"
                         onClick={() => {
@@ -192,7 +218,6 @@ const Navbar = () => {
                 </button>
               </div>
 
-              {/* Mobile Dashboard link */}
               {user && (user.role === "Admin" || user.role === "Instructor") && (
                 <button
                   className="px-4 py-2 hover:bg-gray-100 rounded-lg text-black"
@@ -204,10 +229,8 @@ const Navbar = () => {
                 </button>
               )}
 
-              {/* Mobile Nav Items */}
               <NavItems isMobile={true} />
 
-              {/* Footer */}
               <div className="mt-auto text-black">
                 <p className="text-sm">© 2025 ELearning</p>
               </div>

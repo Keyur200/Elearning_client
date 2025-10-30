@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import axios from "axios";
 
-const CreateCourse = () => {
+const EditCourse = () => {
+  const { courseId } = useParams(); // <-- use the correct param name
   const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [categories, setCategories] = useState([]);
   const [thumbnailFile, setThumbnailFile] = useState(null);
@@ -19,6 +23,7 @@ const CreateCourse = () => {
     tags: "",
     level: "Beginner",
     benefits: "",
+    thumbnail: "",
   });
 
   // Fetch categories
@@ -26,10 +31,54 @@ const CreateCourse = () => {
     axios
       .get("http://localhost:5000/api/categories", { withCredentials: true })
       .then((res) => setCategories(res.data))
-      .catch((err) =>
-        console.error("Error fetching categories:", err.response || err)
-      );
+      .catch((err) => console.error("Error fetching categories:", err));
   }, []);
+
+  // Fetch existing course data
+  useEffect(() => {
+    if (!courseId) {
+      setError("Course ID is missing in URL.");
+      setLoading(false);
+      return;
+    }
+
+    const fetchCourse = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(
+          `http://localhost:5000/api/course/${courseId}`,
+          { withCredentials: true }
+        );
+
+        const data = res.data;
+
+        setCourse({
+          title: data.title || "",
+          description: data.description || "",
+          categoryId: data.categoryId?._id || "",
+          price: data.price || "",
+          estimatedPrice: data.estimatedPrice || "",
+          tags: Array.isArray(data.tags) ? data.tags.join(",") : data.tags || "",
+          level: data.level || "Beginner",
+          benefits: Array.isArray(data.benefits)
+            ? data.benefits.join(",")
+            : data.benefits || "",
+          thumbnail: data.thumbnail || "",
+        });
+
+        setPreviewUrl(data.thumbnail || null);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching course:", err.response || err);
+        setError(
+          err.response?.data?.message || "Failed to load course details."
+        );
+        setLoading(false);
+      }
+    };
+
+    fetchCourse();
+  }, [courseId]);
 
   // Handle input change
   const handleChange = (e) => {
@@ -46,17 +95,12 @@ const CreateCourse = () => {
     }
   };
 
-  // Handle form submit
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!course.title || !course.categoryId || !course.price) {
       Swal.fire("Error", "Title, Category, and Price are required.", "error");
-      return;
-    }
-
-    if (!thumbnailFile) {
-      Swal.fire("Error", "Thumbnail is required.", "error");
       return;
     }
 
@@ -68,28 +112,19 @@ const CreateCourse = () => {
       formData.append("price", course.price);
       formData.append("estimatedPrice", course.estimatedPrice);
       formData.append("level", course.level);
-      formData.append("tags", course.tags); // comma-separated
-      formData.append("benefits", course.benefits); // comma-separated
-      formData.append("thumbnail", thumbnailFile);
+      formData.append("tags", course.tags);
+      formData.append("benefits", course.benefits);
+      if (thumbnailFile) formData.append("thumbnail", thumbnailFile);
 
-      const res = await axios.post(
-        "http://localhost:5000/api/course",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true, // Send JWT cookie for authentication
-        }
-      );
+      await axios.put(`http://localhost:5000/api/course/${courseId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true,
+      });
 
-      Swal.fire("Success", "Course created successfully!", "success");
-
-      // Redirect to Add Video page
-      navigate(`/instructor/add-video/${res.data.course._id}`);
+      Swal.fire("Success", "Course updated successfully!", "success");
+      navigate(`/instructor/edit-videos/${courseId}`);
     } catch (err) {
-      console.error(
-        "Error creating course:",
-        err.response?.data || err.message || err
-      );
+      console.error("Error updating course:", err.response || err);
       Swal.fire(
         "Error",
         err.response?.data?.message || "Something went wrong",
@@ -98,6 +133,21 @@ const CreateCourse = () => {
     }
   };
 
+  // Loading or error display
+  if (loading)
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="text-xl font-medium">Loading course details...</div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="min-h-screen flex justify-center items-center text-red-600 text-xl font-medium">
+        {error}
+      </div>
+    );
+
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 p-8">
       <form
@@ -105,7 +155,7 @@ const CreateCourse = () => {
         className="w-full max-w-3xl bg-white p-8 rounded-2xl shadow-md"
       >
         <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-          Create New Course
+          Edit Course
         </h2>
 
         {/* Title & Category */}
@@ -118,7 +168,6 @@ const CreateCourse = () => {
               value={course.title}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md p-2"
-              placeholder="Enter course title"
               required
             />
           </div>
@@ -152,7 +201,6 @@ const CreateCourse = () => {
               value={course.price}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md p-2"
-              placeholder="Enter course price"
               required
             />
           </div>
@@ -165,7 +213,6 @@ const CreateCourse = () => {
               value={course.estimatedPrice}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md p-2"
-              placeholder="Enter estimated price"
             />
           </div>
         </div>
@@ -187,13 +234,12 @@ const CreateCourse = () => {
           </div>
 
           <div>
-            <label className="block mb-2 font-medium">Upload Thumbnail</label>
+            <label className="block mb-2 font-medium">Change Thumbnail</label>
             <input
               type="file"
               accept="image/*"
               onChange={handleFileChange}
               className="w-full border border-gray-300 rounded-md p-2"
-              required
             />
             {previewUrl && (
               <div className="mt-4">
@@ -215,7 +261,6 @@ const CreateCourse = () => {
             value={course.description}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-md p-2"
-            placeholder="Enter description"
             rows="3"
           />
         </div>
@@ -230,7 +275,6 @@ const CreateCourse = () => {
               value={course.tags}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md p-2"
-              placeholder="e.g. javascript,frontend,programming"
             />
           </div>
           <div>
@@ -241,7 +285,6 @@ const CreateCourse = () => {
               value={course.benefits}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md p-2"
-              placeholder="e.g. Learn basics, Build projects"
             />
           </div>
         </div>
@@ -251,11 +294,11 @@ const CreateCourse = () => {
           type="submit"
           className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
         >
-          Create Course
+          Update Course
         </button>
       </form>
     </div>
   );
 };
 
-export default CreateCourse;
+export default EditCourse;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
 import {
   FaHome,
@@ -15,11 +15,30 @@ import { Link } from "react-router-dom";
 import "../../styles/InstructorSidebar.css";
 
 const InstructorSidebar = ({ instructor, onLogout, isCollapsed, setIsCollapsed }) => {
-  const [selected, setSelected] = React.useState("Dashboard");
+  const [selected, setSelected] = useState("Dashboard");
+  const [profileImage, setProfileImage] = useState(null); // <-- profile image state
 
   const firstLetter = instructor?.name
     ? instructor.name.charAt(0).toUpperCase()
     : "I";
+
+  // Fetch profile image
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!instructor) return;
+      try {
+        const res = await fetch("http://localhost:5000/api/profile", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setProfileImage(data.image || null);
+      } catch (err) {
+        console.error("Failed to fetch profile image", err);
+      }
+    };
+    fetchProfile();
+  }, [instructor]);
 
   // Sidebar Menu Items
   const menuItems = [
@@ -48,20 +67,12 @@ const InstructorSidebar = ({ instructor, onLogout, isCollapsed, setIsCollapsed }
         <Menu>
           {/* Collapse Toggle */}
           <MenuItem
-            icon={
-              isCollapsed ? (
-                <FaChevronRight color="#000" />
-              ) : (
-                <FaChevronLeft color="#000" />
-              )
-            }
+            icon={isCollapsed ? <FaChevronRight color="#000" /> : <FaChevronLeft color="#000" />}
             onClick={() => setIsCollapsed(!isCollapsed)}
             style={{ color: "#000", margin: "10px 0 20px 0" }}
           >
             {!isCollapsed && (
-              <h2 className="text-lg font-semibold text-black text-center">
-                Instructor
-              </h2>
+              <h2 className="text-lg font-semibold text-black text-center">Instructor</h2>
             )}
           </MenuItem>
 
@@ -69,27 +80,26 @@ const InstructorSidebar = ({ instructor, onLogout, isCollapsed, setIsCollapsed }
           {!isCollapsed && (
             <div className="text-center mb-5 text-black">
               <div
-                className="mx-auto flex items-center justify-center rounded-full border-4 border-black w-20 h-20 text-3xl font-bold bg-gray-200"
-                style={{ color: "#000" }}
+                className="mx-auto flex items-center justify-center rounded-full border-4 border-black w-20 h-20 overflow-hidden bg-gray-200"
               >
-                {firstLetter}
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-3xl font-bold">{firstLetter}</span>
+                )}
               </div>
-              <h3 className="mt-2 text-base font-semibold">
-                {instructor?.name || "Instructor"}
-              </h3>
-              <p className="text-sm text-gray-600 capitalize">
-                {instructor?.role || "Instructor"}
-              </p>
+              <h3 className="mt-2 text-base font-semibold">{instructor?.name || "Instructor"}</h3>
+              <p className="text-sm text-gray-600 capitalize">{instructor?.role || "Instructor"}</p>
             </div>
           )}
 
           {/* Menu Links */}
           {menuItems.map((item) => (
-            <Link
-              key={item.name}
-              to={item.path}
-              style={{ textDecoration: "none" }}
-            >
+            <Link key={item.name} to={item.path} style={{ textDecoration: "none" }}>
               <MenuItem
                 icon={item.icon}
                 active={selected === item.name}
