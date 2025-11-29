@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 
 const navLinks = [
   { id: 1, name: "Home", path: "/" },
-  { id: 2, name: "About Us", path: "/about" },
-  { id: 3, name: "Courses", path: "/courses" },
-  { id: 4, name: "Resources", path: "/resources" },
-  { id: 5, name: "Support Center", path: "/support" },
+  { id: 2, name: "AboutUs", path: "/AboutUs" },
+  { id: 3, name: "Courses", path: "/Courses" },
+  { id: 4, name: "Resources", path: "/Resources" },
+  { id: 5, name: "SupportCenter", path: "/SupportCenter" },
 ];
 
 const NavItems = ({ isMobile }) => {

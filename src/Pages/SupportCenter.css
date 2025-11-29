@@ -1,0 +1,94 @@
+.support-container {
+  padding: 60px 40px;
+  text-align: center;
+  background: #fafafa;
+}
+
+.support-hero h1 {
+  font-size: 2.4rem;
+  color: #5b21b6;
+  font-weight: 700;
+}
+
+.support-hero p {
+  color: #555;
+  margin-top: 10px;
+}
+
+/* FAQ Section */
+.faq-section {
+  margin-top: 60px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+}
+
+.faq-section h2 {
+  text-align: center;
+  color: #5b21b6;
+  margin-bottom: 25px;
+}
+
+details {
+  background: white;
+  padding: 18px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+  cursor: pointer;
+}
+
+details summary {
+  font-weight: 600;
+  color: #333;
+}
+
+details p {
+  margin-top: 10px;
+  color: #444;
+}
+
+/* Contact */
+.contact-box {
+  margin-top: 70px;
+  background: linear-gradient(135deg, #ede9fe, #c4b5fd);
+  padding: 40px;
+  border-radius: 20px;
+}
+
+.contact-box h2 {
+  color: #4c1d95;
+}
+
+.support-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.support-form input,
+.support-form textarea {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+.support-form textarea {
+  height: 120px;
+}
+
+.support-form button {
+  background: #5b21b6;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.support-form button:hover {
+  background: #4c1d95;
+}

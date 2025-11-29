@@ -6,6 +6,10 @@ import { useNavigate } from "react-router-dom";
 import NavItems from "../utils/NavItems";
 import Login from "../Pages/Login";
 import Register from "../Pages/Register";
+import AboutUs from "../Pages/AboutUs";
+import Courses from "../Pages/Courses";
+import Resources from "../Pages/Resources";
+import SupportCenter from "../Pages/SupportCenter";
 
 const Navbar = () => {
   const [active, setActive] = useState(false);

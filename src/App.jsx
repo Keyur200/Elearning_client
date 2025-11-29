@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./Components/Navbar";
+import Footer from "./Components/Footer";
 import Home from "./Pages/Home";
+import AboutUs from "./Pages/AboutUs";
+import Courses from "./Pages/Courses";
+import Resources from "./Pages/Resources";
+import SupportCenter from "./Pages/SupportCenter";
+
 import Profile from "./Pages/Profile";
 import Login from "./Pages/Login";
 import Register from "./Pages/Register";
@@ -46,7 +52,25 @@ function AppWrapper() {
         <Routes>
           {/* 🏠 Public/User Routes */}
           <Route path="/" element={<Home />} />
+          
+          {/* AboutUs Page Route */}
+          <Route path="/AboutUs" element={<AboutUs />} />
+          
+          
+          {/* Courses Page Route */}
+          <Route path="/Courses" element={<Courses />} />
+          
+          
+          {/* Resources Page Route */}
+          <Route path="/Resources" element={<Resources />} />
+
+          
+          {/* SupportCenter Page Route */}
+          <Route path="/SupportCenter" element={<SupportCenter />} />
+          
+          
           <Route path="/course/:id" element={<CourseDetails />} />
+          
           <Route
             path="/profile"
             element={
