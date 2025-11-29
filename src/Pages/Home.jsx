@@ -4,10 +4,13 @@ import { useNavigate } from "react-router-dom";
 
 // In Home.jsx
 import heroImage from "./Home_Images/hero.png";
-import aiImage from "./Home_Images/ai.png";
+import genAiImage from "./Home_Images/ai.png";
 import certiImage from "./Home_Images/certi.png";
 import dsImage from "./Home_Images/data.png";
 import webDevImage from "./Home_Images/web.png";
+
+import aiImage from "./Home_Images/ai.png";
+
 
 // Placeholder data for new sections
 const TestimonialData = [
@@ -204,7 +207,7 @@ const Home = () => {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { name: "Generative AI", img: aiImage, description: "Explore the future of AI technology and tools." },
+            { name: "Generative AI", img: genAiImage, description: "Explore the future of AI technology and tools." },
             { name: "IT Certifications", img: certiImage, description: "Validate your skills with industry-recognized certifications." },
             { name: "Data Science", img: dsImage, description: "Master data analysis, modeling, and interpretation." },
             { name: "Web Development", img: webDevImage, description: "Build modern, responsive websites and applications." },
@@ -273,7 +276,7 @@ const Home = () => {
           </div>
 
           <img
-            src="https://images.unsplash.com/photo-1596496034474-2c5e4a9bb140"
+            src={aiImage}
             className="rounded-xl shadow-xl w-full"
             alt="AI Learning"
           />
