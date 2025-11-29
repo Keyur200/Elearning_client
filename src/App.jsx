@@ -24,9 +24,12 @@ function AppWrapper() {
   const [showRegister, setShowRegister] = useState(false);
   const location = useLocation();
 
-  // Hide navbar on dashboards
-  const hideNavbarPaths = ["/admin", "/instructor", "/profile"];
-  const showNavbar = !hideNavbarPaths.some((path) =>
+  // ⛔ Hide Navbar AND Footer on dashboard pages  
+  // ---- UPDATED LINE ----
+  const hideUIPaths = ["/admin", "/instructor", "/profile"];
+
+  // ---- UPDATED LINE ----
+  const showUI = !hideUIPaths.some((path) =>
     location.pathname.startsWith(path)
   );
 
@@ -37,8 +40,8 @@ function AppWrapper() {
       {/* Toast Notifications */}
       <Toaster position="top-center" reverseOrder={false} />
 
-      {/* Navbar */}
-      {showNavbar && (
+      {/* ✅ SHOW NAVBAR ONLY IF ALLOWED — UPDATED */}
+      {showUI && (
         <Navbar
           showLogin={showLogin}
           setShowLogin={setShowLogin}
@@ -47,30 +50,32 @@ function AppWrapper() {
         />
       )}
 
-      {/* Page Content */}
-      <div style={{ paddingTop: showNavbar ? NAVBAR_HEIGHT : 0 }}>
+      {/* Page Content — Adjusted padding when navbar is visible */}
+      <div
+        style={{
+          minHeight: "80vh", // ✅ Ensures footer stays bottom of page
+          paddingTop: showUI ? NAVBAR_HEIGHT : 0,
+        }}
+      >
         <Routes>
           {/* 🏠 Public/User Routes */}
           <Route path="/" element={<Home />} />
-          
+
           {/* AboutUs Page Route */}
           <Route path="/AboutUs" element={<AboutUs />} />
-          
-          
+
           {/* Courses Page Route */}
           <Route path="/Courses" element={<Courses />} />
-          
-          
+
           {/* Resources Page Route */}
           <Route path="/Resources" element={<Resources />} />
 
-          
           {/* SupportCenter Page Route */}
           <Route path="/SupportCenter" element={<SupportCenter />} />
-          
-          
+
           <Route path="/course/:id" element={<CourseDetails />} />
-          
+
+          {/* User Profile */}
           <Route
             path="/profile"
             element={
@@ -79,7 +84,6 @@ function AppWrapper() {
               </ProtectedRoute>
             }
           />
-          
 
           {/* 🧑‍💼 Admin Sub-App */}
           <Route
@@ -103,7 +107,7 @@ function AppWrapper() {
         </Routes>
       </div>
 
-      {/* Modals */}
+      {/* Login & Register Modals */}
       {showLogin && (
         <Login
           closeModal={() => setShowLogin(false)}
@@ -123,7 +127,9 @@ function AppWrapper() {
           }}
         />
       )}
-        {<Footer />}
+
+      {/* ✅ SHOW FOOTER ONLY IF ALLOWED — UPDATED */}
+      {showUI && <Footer />} {/* <-- FOOTER NOW HIDDEN ON DASHBOARDS */}
     </>
   );
 }
