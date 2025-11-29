@@ -123,6 +123,7 @@ function AppWrapper() {
           }}
         />
       )}
+        {<Footer />}
     </>
   );
 }
