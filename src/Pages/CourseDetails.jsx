@@ -24,8 +24,12 @@ import LockIcon from "@mui/icons-material/Lock";
 import Swal from "sweetalert2";
 import { useParams, useNavigate } from "react-router-dom";
 import PreviewVideoDialog from "../Components/PreviewVideoDialog";
+import axios from "axios";
+import { useAuth } from "../Context/UserContext";
 
 const CourseDetails = () => {
+
+  const [user, setUser] = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [courseData, setCourseData] = useState(null);
@@ -35,6 +39,20 @@ const CourseDetails = () => {
   const [openPreview, setOpenPreview] = useState(false);
   const [previewVideos, setPreviewVideos] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const [access, setAccess] = useState(false);
+
+  const checkAccess = async () => {
+    const { data } = await axios.get(
+      `http://localhost:5000/api/course/${id}/access`,
+      { params: { userId: user._id } }
+    );
+    setAccess(data.access);
+  };
+
+  useEffect(() => {
+    checkAccess();
+  }, []);
 
   const getCourseDetails = async () => {
     try {
@@ -96,6 +114,72 @@ const CourseDetails = () => {
   }
 
   const { course, purchased, sections } = courseData;
+
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => {
+        resolve(true);
+      };
+      script.onerror = () => {
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+  const handleContinue = () => {
+    navigate(`/my-course/${course._id}`);
+  };
+
+  const handleBuyNow = async () => {
+    const res = await loadRazorpay();
+
+    if (!res) {
+      toast.error('Razorpay SDK failed to load');
+      return;
+    }
+    try {
+      const { data } = await axios.post("http://localhost:5000/api/createorder", {
+        courseId: course._id,
+        userId: user._id,
+        amount: course.price
+      });
+
+      const options = {
+        key: data.key,
+        amount: data.razorpayOrder.amount,
+        currency: "INR",
+        name: "My Learning App",
+        description: course.title,
+        order_id: data.razorpayOrder.id,
+
+        handler: async function (response) {
+          await axios.post("http://localhost:5000/api/payment", {
+            orderId: data.orderId,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature
+          });
+
+          alert("Payment successful!");
+          navigate(`/my-course/${course._id}`);
+        },
+
+        theme: {
+          color: "#a435f0"
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      console.error("🔥 FRONTEND ERROR:", err.response?.data || err);
+      alert(err.response?.data?.message || "Something went wrong!");
+    }
+  };
+
 
   return (
     <Box sx={{ backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
@@ -174,13 +258,9 @@ const CourseDetails = () => {
                   fontSize: "1rem",
                   mt: 2,
                 }}
-                onClick={() =>
-                  purchased
-                    ? navigate(`/my-course/${course._id}`)
-                    : navigate(`/enroll/${course._id}`)
-                }
+                onClick={access ? handleContinue : handleBuyNow}
               >
-                {purchased ? "Continue Learning" : "Buy Now"}
+                {access ? "Continue Learning" : "Buy Now"}
               </Button>
             </Box>
           </Grid>
@@ -262,9 +342,8 @@ const CourseDetails = () => {
                         </ListItemIcon>
                         <ListItemText
                           primary={video.title}
-                          secondary={`Duration: ${video.duration} min${
-                            video.isPreview ? " (Preview)" : ""
-                          }`}
+                          secondary={`Duration: ${video.duration} min${video.isPreview ? " (Preview)" : ""
+                            }`}
                         />
                         {video.isPreview && (
                           <Button
