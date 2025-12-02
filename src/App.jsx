@@ -1,26 +1,33 @@
 import { useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./Components/Navbar";
+import Footer from "./Components/Footer";
+
 import Home from "./Pages/Home";
 import Profile from "./Pages/Profile";
 import Login from "./Pages/Login";
 import Register from "./Pages/Register";
+import CourseDetails from "./Pages/CourseDetails";
+
+import About from "./Pages/About";
+import Contact from "./Pages/Contact";
+import Courses from "./Pages/Courses";
+
 import ProtectedRoute from "./Components/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
 
-// Import sub-apps
+// Sub-apps
 import AdminApp from "./Admin/AdminApp";
 import InstructorApp from "./Instructor/InstructorApp";
-import CourseDetails from "./Pages/CourseDetails";
 
 function AppWrapper() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const location = useLocation();
 
-  // Hide navbar on dashboards
-  const hideNavbarPaths = ["/admin", "/instructor", "/profile"];
-  const showNavbar = !hideNavbarPaths.some((path) =>
+  // Hide navbar/footer on dashboards
+  const hideBarPaths = ["/admin", "/instructor", "/profile"];
+  const showBars = !hideBarPaths.some((path) =>
     location.pathname.startsWith(path)
   );
 
@@ -28,11 +35,11 @@ function AppWrapper() {
 
   return (
     <>
-      {/* Toast Notifications */}
+      {/* Toast */}
       <Toaster position="top-center" reverseOrder={false} />
 
       {/* Navbar */}
-      {showNavbar && (
+      {showBars && (
         <Navbar
           showLogin={showLogin}
           setShowLogin={setShowLogin}
@@ -41,12 +48,16 @@ function AppWrapper() {
         />
       )}
 
-      {/* Page Content */}
-      <div style={{ paddingTop: showNavbar ? NAVBAR_HEIGHT : 0 }}>
+      {/* Pages */}
+      <div style={{ paddingTop: showBars ? NAVBAR_HEIGHT : 0 }}>
         <Routes>
-          {/* 🏠 Public/User Routes */}
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/courses" element={<Courses />} />
           <Route path="/course/:id" element={<CourseDetails />} />
+
           <Route
             path="/profile"
             element={
@@ -55,9 +66,8 @@ function AppWrapper() {
               </ProtectedRoute>
             }
           />
-          
 
-          {/* 🧑‍💼 Admin Sub-App */}
+          {/* Admin */}
           <Route
             path="/admin/*"
             element={
@@ -67,7 +77,7 @@ function AppWrapper() {
             }
           />
 
-          {/* 🧑‍🏫 Instructor Sub-App */}
+          {/* Instructor */}
           <Route
             path="/instructor/*"
             element={
@@ -79,7 +89,10 @@ function AppWrapper() {
         </Routes>
       </div>
 
-      {/* Modals */}
+      {/* Footer - Only user-side */}
+      {showBars && <Footer />}
+
+      {/* Auth Modals */}
       {showLogin && (
         <Login
           closeModal={() => setShowLogin(false)}
@@ -89,7 +102,6 @@ function AppWrapper() {
           }}
         />
       )}
-
       {showRegister && (
         <Register
           closeModal={() => setShowRegister(false)}

@@ -1,23 +1,31 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import {
-  Container,
-  Grid,
-  Card,
-  CardContent,
-  CardMedia,
-  Typography,
-  Button,
-  CircularProgress,
-  Box,
-} from "@mui/material";
 import { useNavigate } from "react-router-dom";
+
+// In Home.jsx
+import heroImage from "./Home_Images/hero.png";
+import genAiImage from "./Home_Images/ai.png";
+import certiImage from "./Home_Images/certi.png";
+import dsImage from "./Home_Images/data.png";
+import webDevImage from "./Home_Images/web.png";
+
+import aiImage from "./Home_Images/ai.png";
+
+
+// Placeholder data for new sections
+const TestimonialData = [
+  { quote: "This platform changed my career path. The deep learning courses are exceptional.", author: "Sarah L.", role: "Data Scientist" },
+  { quote: "The certifications gave me the confidence boost and knowledge I needed for a promotion.", author: "Mark J.", role: "Web Developer" },
+  { quote: "The hands-on projects were directly applicable to my job. Highly recommend!", author: "Aisha K.", role: "Software Engineer" },
+  { quote: "Excellent instructors and up-to-date content on AI and Machine Learning.", author: "David P.", role: "AI Engineer" },
+];
 
 const Home = () => {
   const [courses, setCourses] = useState([]);
-  const [visibleCount, setVisibleCount] = useState(3); // 👈 show 3 at a time
+  const [visibleCount, setVisibleCount] = useState(6);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
   const getAllPublishedCourses = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/courses/published");
@@ -30,141 +38,268 @@ const Home = () => {
   };
 
   useEffect(() => {
+    // Populate courses with dummy data if API fails or returns too few for the new sections
+    if (courses.length < 4 && !loading) {
+      setCourses([
+        { _id: '1', title: 'React JS Masterclass', price: 999, thumbnail: 'https://images.unsplash.com/photo-1633356122544-ad263c9b740b?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cmVhY3R8ZW58MHx8MHx8fDA%3D', description: 'Build modern applications with React and Hooks.' },
+        { _id: '2', title: 'Python for Data Science', price: 1299, thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHB5dGhvbiUyMGNvZGV8ZW58MHx8MHx8fDA%3D', description: 'A comprehensive guide to Python data analysis.' },
+        { _id: '3', title: 'AWS Certified Solutions Architect', price: 1999, thumbnail: 'https://images.unsplash.com/photo-1629854497184-486127117180?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8YXdzfGVufDB8fDB8fHww', description: 'Prepare for the associate level certification.' },
+        { _id: '4', title: 'UI/UX Design using Figma', price: 899, thumbnail: 'https://images.unsplash.com/photo-1626770020300-3532c1c68615?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHVpJTIwZGVzaWdufGVufDB8fDB8fHww', description: 'Master design principles and prototyping in Figma.' },
+        ...courses, // Keep real courses if available
+      ]);
+    }
     getAllPublishedCourses();
   }, []);
 
   const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 3); // 👈 show 3 more each click
+    setVisibleCount((prev) => prev + 6);
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 5, mb: 5 }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom align="center">
-        Published Courses
-      </Typography>
+    <div className="w-full">
+      {/* ------------------------------------------------ HERO SECTION ------------------------------------------------ */}
+      <div className="bg-gradient-to-r from-purple-700 to-blue-600 text-white py-10 px-6">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-14 items-center">
+          <div>
+            <h1 className="text-4xl font-extrabold leading-snug">
+              Level up your skills with our best learning experience
+            </h1>
+            <p className="mt-4 text-lg opacity-90">
+              Start learning today with expert-designed courses and real-world projects.
+            </p>
+            {/* Added hover interaction */}
+            <button className="mt-6 px-6 py-3 bg-white text-black font-semibold rounded-lg shadow hover:bg-gray-100 transition transform hover:scale-[1.02]">
+              Start Learning
+            </button>
+          </div>
 
-      {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" mt={10}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <>
-          <Grid container spacing={4}>
-            {courses.slice(0, visibleCount).map((course) => (
-              <Grid item xs={12} sm={6} md={4} key={course._id}>
-                <Card
-                  sx={{
-                    borderRadius: 3,
-                    boxShadow: 3,
-                    height: "100%",
-                    maxWidth: 345,
-                    minWidth: 300,  
-                    display: "flex",
-                    flexDirection: "column",
-                    transition: "transform 0.3s, box-shadow 0.3s",
-                    "&:hover": {
-                      transform: "translateY(-6px)",
-                      boxShadow: 6,
-                    },
-                  }}
+          <img
+            src={heroImage}
+            className="rounded-xl shadow-xl w-full"
+            alt="Learning banner"
+          />
+        </div>
+      </div>
+
+
+
+      {/* ------------------------------------------------ CATEGORIES ------------------------------------------------ */}
+      <div className="max-w-6xl mx-auto mt-10 px-2"> {/* Reduced from mt-14 */}
+        <h2 className="text-3xl font-bold mb-6">Learn essential skills</h2>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { name: "Generative AI", img: genAiImage, description: "Explore the future of AI technology and tools." },
+            { name: "IT Certifications", img: certiImage, description: "Validate your skills with industry-recognized certifications." },
+            { name: "Data Science", img: dsImage, description: "Master data analysis, modeling, and interpretation." },
+            { name: "Web Development", img: webDevImage, description: "Build modern, responsive websites and applications." },
+          ].map((category, idx) => (
+            <div key={idx}className="bg-white rounded-lg shadow-lg hover:shadow-2xl transition duration-300 cursor-pointer overflow-hidden group border border-gray-100 transform hover:-translate-y-1"
+            >
+              <div className="relative h-44 overflow-hidden">
+                {/* Zooming effect on image hover is already here (group-hover:scale-110) */}
+                <img 
+                  src={category.img} 
+                  alt={category.name} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-xl mb-1 text-gray-900">{category.name}</h3>
+                <p className="text-sm text-gray-500 line-clamp-2">{category.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ------------------------------------------------ NEW SECTION: TESTIMONIALS ------------------------------------------------ */}
+      <div className="mt-10 py-16 px-4 bg-yellow-50"> {/* Reduced from mt-20 */}
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold mb-10 text-center">Hear from Our Learners 🗣️</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {TestimonialData.map((testimonial, index) => (
+              // Added hover interaction for testimonial card
+              <div key={index} className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-purple-600 hover:shadow-2xl transition duration-300 transform hover:scale-[1.02]">
+                <p className="text-lg italic text-gray-700 mb-4 leading-relaxed">
+                  "{testimonial.quote}"
+                </p>
+                <div className="pt-4 border-t border-gray-100">
+                    <p className="font-semibold text-purple-600">{testimonial.author}</p>
+                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------ FEATURED SECTION ------------------------------------------------ */}
+      <div className="mt-10 bg-gray-100 py-12 px-4"> {/* Reduced from mt-20 */}
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <h2 className="text-3xl font-bold leading-snug">
+              Reimagine your career in the AI era
+            </h2>
+            <p className="mt-3 text-gray-700">
+              Build job-ready skills with hands-on training and guidance from experts.
+            </p>
+
+            <ul className="mt-5 space-y-3">
+              <li className="flex items-center gap-2 text-gray-700"><span className="text-purple-600 font-bold">✔</span> Learn AI and more</li>
+              <li className="flex items-center gap-2 text-gray-700"><span className="text-purple-600 font-bold">✔</span> Prepare for certifications</li>
+              <li className="flex items-center gap-2 text-gray-700"><span className="text-purple-600 font-bold">✔</span> Advance your career</li>
+            </ul>
+
+            {/* Added hover interaction to button */}
+            <button className="mt-6 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow hover:bg-purple-700 transition transform hover:scale-[1.02]">
+              Explore Programs
+            </button>
+          </div>
+
+          <img
+            src={aiImage}
+            className="rounded-xl shadow-xl w-full"
+            alt="AI Learning"
+          />
+        </div>
+      </div>
+
+      {/* ------------------------------------------------ PUBLISHED COURSES ------------------------------------------------ */}
+      <div className="max-w-6xl mx-auto mt-10 px-4"> {/* Reduced from mt-20 */}
+        <h2 className="text-3xl font-bold mb-6 text-center">Published Courses</h2>
+
+        {loading ? (
+          <p className="text-center text-lg font-semibold">Loading...</p>
+        ) : (
+          <>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
+              {courses.slice(0, visibleCount).map((course) => (
+                <div
+                  key={course._id}
+                  // Added hover interaction for course card
+                  className="bg-white rounded-xl shadow hover:shadow-xl transition overflow-hidden cursor-pointer transform hover:-translate-y-1 hover:scale-[1.01]"
+                  onClick={() => navigate(`/course/${course._id}`)}
                 >
-                  {/* Image section */}
-                  <Box
-                    sx={{
-                      position: "relative",
-                      width: "100%",
-                      paddingTop: "56.25%", // 16:9 aspect ratio
-                      overflow: "hidden",
-                      borderTopLeftRadius: "12px",
-                      borderTopRightRadius: "12px",
-                    }}
-                  >
-                    <CardMedia
-                      component="img"
-                      image={course.thumbnail || "/default-course.jpg"}
+                  <div className="relative">
+                    <img
+                      src={course.thumbnail || "/default-course.jpg"}
                       alt={course.title}
-                      sx={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        transition: "transform 0.4s ease",
-                        "&:hover": {
-                          transform: "scale(1.05)",
-                        },
-                      }}
+                      className="w-full h-48 object-cover hover:scale-105 transition duration-500"
                     />
-                  </Box>
+                  </div>
 
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography
-                      variant="h6"
-                      fontWeight="bold"
-                      gutterBottom
-                      noWrap
-                    >
-                      {course.title}
-                    </Typography>
-
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        height: "45px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
+                  <div className="p-5">
+                    <h3 className="font-semibold text-lg truncate">{course.title}</h3>
+                    <p className="text-gray-600 h-12 overflow-hidden mt-2 text-sm">
                       {course.description}
-                    </Typography>
+                    </p>
 
-                    <Typography variant="subtitle1" color="primary" mt={2}>
+                    <p className="mt-3 text-purple-600 font-bold text-lg">
                       ₹{course.price}
-                    </Typography>
+                    </p>
 
-                    <Button
-                      variant="contained"
-                      size="small"
-                      fullWidth
-                      sx={{
-                        mt: 2,
-                        borderRadius: 2,
-                        textTransform: "none",
-                        fontWeight: "bold",
-                      }}
-                      onClick={() => navigate(`/course/${course._id}`)}
+                    {/* Added hover interaction to button */}
+                    <button
+                      className="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-semibold transition transform hover:scale-[1.02]"
                     >
                       View Course
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          {/* Load More Button */}
-          {visibleCount < courses.length && (
-            <Box textAlign="center" mt={5}>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={handleLoadMore}
-                sx={{
-                  borderRadius: 3,
-                  px: 4,
-                  textTransform: "none",
-                  fontWeight: "bold",
-                }}
+            {visibleCount < courses.length && (
+              <div className="text-center mt-8">
+                {/* Added hover interaction to button */}
+                <button
+                  onClick={handleLoadMore}
+                  className="px-6 py-2 border border-purple-500 text-purple-600 rounded-lg font-semibold hover:bg-purple-50 transition transform hover:scale-[1.02]"
+                >
+                  Load More
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      
+      {/* ------------------------------------------------ NEW SECTION: CALL TO ACTION (CTA) ------------------------------------------------ */}
+      <div className="mt-10 py-16 px-4 bg-purple-700 text-white"> {/* Reduced from mt-20 */}
+        <div className="max-w-6xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
+            Ready to Start Your Learning Journey?
+          </h2>
+          <p className="text-lg opacity-90 mb-8 max-w-3xl mx-auto">
+            Get unlimited access to thousands of courses and job-ready certifications.
+          </p>
+          <div className="flex justify-center space-x-4">
+            {/* Added hover interaction to button */}
+            <button className="px-8 py-3 bg-yellow-400 text-black font-bold rounded-lg shadow-lg hover:bg-yellow-300 transition transform hover:scale-105">
+              Enroll Now
+            </button>
+            {/* Added hover interaction to button */}
+            <button className="px-8 py-3 border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:text-purple-700 transition transform hover:scale-105">
+              View All Courses
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------ TRENDING COURSES (Added colored background) ------------------------------------------------ */}
+      <div className="bg-blue-50 py-16 px-4"> {/* Removed mt-20 */}
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold mb-6">Trending Courses</h2>
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8">
+            {courses.slice(0, 4).map((course) => (
+              <div
+                key={course._id}
+                // Added hover interaction for course card
+                className="bg-white rounded-xl shadow hover:shadow-xl p-4 transition cursor-pointer transform hover:-translate-y-1 hover:scale-[1.01]"
+                onClick={() => navigate(`/course/${course._id}`)}
               >
-                Load More
-              </Button>
-            </Box>
-          )}
-        </>
-      )}
-    </Container>
+                <img
+                  src={course.thumbnail}
+                  className="rounded-lg h-40 w-full object-cover"
+                  alt={course.title}
+                />
+                <h4 className="mt-3 font-semibold truncate">{course.title}</h4>
+                <p className="text-gray-500 text-sm mt-1">4.5 Rating | 12k Learners</p>
+                <p className="text-purple-600 font-bold mt-1">₹{course.price}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------ POPULAR SKILLS (Added colored background) ------------------------------------------------ */}
+      {/* Reduced bottom padding to integrate better with an assumed Footer */}
+      <div className="bg-indigo-50 py-16 px-4 pb-12"> 
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold mb-6">Popular Skills</h2>
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {["Python", "AI", "Web Development", "Data Science", "AWS", "UI/UX", "Machine Learning", "Cloud Computing"].map(
+              (skill, idx) => (
+                <div
+                  key={idx}
+                  // Added hover interaction for skill card
+                  className="p-5 bg-white rounded-xl shadow  text-center cursor-pointer transition transform hover:scale-105 hover:shadow-xl"
+                >
+                  <h3 className="font-semibold text-lg text-indigo-700">{skill}</h3>
+                  <p className="text-sm text-gray-500 mt-1">20+ Courses</p>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Placeholder for where your Footer component would typically go */}
+      {/* <Footer /> */} 
+    </div>
   );
 };
 
