@@ -11,6 +11,8 @@ import {
   VideoPreviewModal,
 } from "../Components/CourseDetails";
 
+import Login from "../Pages/Login"; // Login popup component
+
 const CourseDetails = () => {
   const [user] = useAuth();
   const { id } = useParams();
@@ -24,6 +26,8 @@ const CourseDetails = () => {
   const [previewVideos, setPreviewVideos] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const [showLogin, setShowLogin] = useState(false); // login popup state
+
   // ============ LOAD COURSE ============
   const getCourse = async () => {
     try {
@@ -32,7 +36,8 @@ const CourseDetails = () => {
       );
       const data = await res.json();
       setCourseData(data);
-    } catch {
+    } catch (err) {
+      console.error("Error loading course:", err);
       Swal.fire("Error", "Failed to load course", "error");
     } finally {
       setLoading(false);
@@ -41,18 +46,19 @@ const CourseDetails = () => {
 
   // ============ CHECK ACCESS ============
   const checkAccess = async () => {
-    if (!user?._id) return;
-    const { data } = await axios.get(
-      `http://localhost:5000/api/course/${id}/access`,
-      { params: { userId: user._id } }
-    );
-    setAccess(data.access);
+    if (!user?._id) return; // only logged-in users
+    try {
+      const { data } = await axios.get(
+        `http://localhost:5000/api/course/${id}/access`,
+        {
+          withCredentials: true, // send cookies
+        }
+      );
+      setAccess(data.access);
+    } catch (err) {
+      console.error("Failed to check access:", err);
+    }
   };
-
-  useEffect(() => {
-    getCourse();
-    checkAccess();
-  }, [id, user]);
 
   // ============ PREVIEW HANDLERS ============
   const handleOpenPreview = (videos, index) => {
@@ -65,9 +71,20 @@ const CourseDetails = () => {
     setOpenPreview(true);
   };
 
+  // ============ BUY NOW HANDLER ============
   const handleBuyNow = () => {
+    if (!user?._id) {
+      setShowLogin(true); // show login popup
+      return;
+    }
     Swal.fire("Payment", "Integrate Razorpay here...", "info");
   };
+
+  // ============ LOAD ON MOUNT ============
+  useEffect(() => {
+    getCourse();
+    checkAccess();
+  }, [id, user]);
 
   if (loading) return <p>Loading...</p>;
 
@@ -78,7 +95,7 @@ const CourseDetails = () => {
     <>
       <div className="container mx-auto px-4 py-16">
         <div className="flex flex-col lg:flex-row gap-10">
-          {/* LEFT */}
+          {/* LEFT SIDE */}
           <div className="lg:flex-1">
             <CourseMeta course={course} />
             <CourseContentList
@@ -87,19 +104,21 @@ const CourseDetails = () => {
             />
           </div>
 
-          {/* RIGHT */}
+          {/* RIGHT SIDE (SIDEBAR) */}
           <Sidebar
-            course={{ ...course, sections }} // merge sections into course
+            course={{ ...course, sections }}
             access={access}
             totalDuration={totalDuration}
             totalSections={totalSections}
             totalVideos={totalVideos}
             onContinue={() => navigate(`/enrolled-course/${course._id}`)}
             onBuyNow={handleBuyNow}
+            openLoginModal={() => setShowLogin(true)} // triggers login popup
           />
         </div>
       </div>
 
+      {/* VIDEO PREVIEW MODAL */}
       <VideoPreviewModal
         isOpen={openPreview}
         onClose={() => setOpenPreview(false)}
@@ -107,8 +126,16 @@ const CourseDetails = () => {
         onNext={() =>
           setCurrentIndex((i) => Math.min(i + 1, previewVideos.length - 1))
         }
-        onPrev={() => setCurrentIndex((i) => Math.max(i - 1, 0))}
+        onPrev={() => setCurrentIndex((i) => Math.max(i - 0, 0))}
       />
+
+      {/* LOGIN POPUP */}
+      {showLogin && (
+        <Login
+          closeModal={() => setShowLogin(false)}
+          openRegister={() => setShowLogin(false)}
+        />
+      )}
     </>
   );
 };

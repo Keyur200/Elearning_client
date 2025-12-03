@@ -5,40 +5,70 @@ import { useNavigate } from 'react-router-dom';
 const CourseCard = ({ course }) => {
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(null);
+  const [isEnrolled, setIsEnrolled] = useState(false); // 🔥 NEW
 
-  // Fetch Profile Image (from your API)
-useEffect(() => {
-  const fetchProfileImage = async () => {
-    if (!course?.instructorId?._id) return;
+  // ===========================
+  // CHECK IF USER IS ENROLLED
+  // ===========================
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/course/${course._id}/access`,
+          { credentials: "include" }
+        );
 
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/profile/${course.instructorId._id}`,
-        { credentials: "include" }
-      );
+        const data = await res.json();
+        if (data?.access) setIsEnrolled(true);
+      } catch (error) {
+        console.error("Failed to check enrollment", error);
+      }
+    };
 
-      if (!res.ok) return;
-      const data = await res.json();
-      setProfileImage(data.image || null);
-    } catch (err) {
-      console.error("Failed to fetch instructor profile image", err);
-    }
-  };
+    checkEnrollment();
+  }, [course]);
 
-  fetchProfileImage();
-}, [course]);
+  // ===========================
+  // FETCH Instructor Profile Image
+  // ===========================
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      if (!course?.instructorId?._id) return;
+
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/profile/${course.instructorId._id}`,
+          { credentials: "include" }
+        );
+
+        if (!res.ok) return;
+        const data = await res.json();
+        setProfileImage(data.image || null);
+      } catch (err) {
+        console.error("Failed to fetch instructor profile image", err);
+      }
+    };
+
+    fetchProfileImage();
+  }, [course]);
 
   const categoryName = course.categoryId?.name || "General";
   const instructorName = course.instructorId?.name || "Unknown Instructor";
 
-  // Fallback avatar if API fails
   const instructorAvatar =
     profileImage ||
     course.instructorId?.avatar ||
     "https://randomuser.me/api/portraits/lego/1.jpg";
 
+  // ===========================
+  // BUTTON LOGIC
+  // ===========================
   const handleEnroll = () => {
-    navigate(`/course/${course._id}`);
+    if (isEnrolled) {
+      navigate(`/enrolled-course/${course._id}`);
+    } else {
+      navigate(`/course/${course._id}`);
+    }
   };
 
   return (
@@ -114,7 +144,8 @@ useEffect(() => {
             onClick={handleEnroll}
             className="bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2"
           >
-            Enroll <ArrowRight className="w-4 h-4" />
+            {isEnrolled ? "Continue Learning" : "Enroll"}  
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

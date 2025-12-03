@@ -8,6 +8,7 @@ import Profile from "./Pages/Profile";
 import Login from "./Pages/Login";
 import Register from "./Pages/Register";
 import CourseDetails from "./Pages/CourseDetails";
+import EnrolledCourse from "./Pages/EnrolledCourse";
 
 import About from "./Pages/About";
 import Contact from "./Pages/Contact";
@@ -34,7 +35,7 @@ function AppWrapper() {
   const NAVBAR_HEIGHT = 80;
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       {/* Toast */}
       <Toaster position="top-center" reverseOrder={false} />
 
@@ -49,7 +50,10 @@ function AppWrapper() {
       )}
 
       {/* Pages */}
-      <div style={{ paddingTop: showBars ? NAVBAR_HEIGHT : 0 }}>
+      <main
+        className="flex-1 overflow-auto"
+        style={{ paddingTop: showBars ? NAVBAR_HEIGHT : 0 }}
+      >
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
@@ -58,6 +62,10 @@ function AppWrapper() {
           <Route path="/courses" element={<Courses />} />
           <Route path="/course/:id" element={<CourseDetails />} />
 
+          {/* Enrolled Course */}
+          <Route path="/enrolled-course/:id" element={<EnrolledCourse />} />
+
+          {/* Profile */}
           <Route
             path="/profile"
             element={
@@ -87,9 +95,9 @@ function AppWrapper() {
             }
           />
         </Routes>
-      </div>
+      </main>
 
-      {/* Footer - Only user-side */}
+      {/* Footer */}
       {showBars && <Footer />}
 
       {/* Auth Modals */}
@@ -111,7 +119,7 @@ function AppWrapper() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 

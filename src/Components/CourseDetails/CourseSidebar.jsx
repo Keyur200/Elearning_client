@@ -9,6 +9,7 @@ const CourseSidebar = ({
   totalDuration,
   totalSections,
   totalVideos,
+  openLoginModal, // <-- new prop to open login popup
 }) => {
   const [playPreview, setPlayPreview] = useState(false);
   const [previewVideo, setPreviewVideo] = useState(null);
@@ -24,7 +25,16 @@ const CourseSidebar = ({
     }
   }, [course]);
 
-  console.log("Preview Video:", previewVideo);
+  // Handle Buy Now click
+  const handleBuyClick = () => {
+    if (!access) {
+      if (openLoginModal) {
+        openLoginModal(); // Open login popup for non-logged-in users
+      }
+    } else {
+      onBuyNow?.(); // Normal Buy Now action
+    }
+  };
 
   return (
     <div className="lg:w-96 mt-8 lg:mt-0">
@@ -70,7 +80,7 @@ const CourseSidebar = ({
               </div>
               <button
                 className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold"
-                onClick={onBuyNow}
+                onClick={handleBuyClick} // <-- use the new handler
               >
                 Buy Now
               </button>
