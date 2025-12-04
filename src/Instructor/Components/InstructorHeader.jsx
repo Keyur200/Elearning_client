@@ -6,7 +6,8 @@ import "../../styles/InstructorHeader.css";
 const InstructorHeader = ({ instructor }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState(null); // <-- profile image state
+  const [notifications, setNotifications] = useState([]);
+  const [profileImage, setProfileImage] = useState(null);
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
   const navigate = useNavigate();
@@ -29,18 +30,34 @@ const InstructorHeader = ({ instructor }) => {
     fetchProfile();
   }, [instructor]);
 
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/notifications", {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch notifications");
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
   const firstLetter = instructor?.name
     ? instructor.name.charAt(0).toUpperCase()
     : "I";
 
-  // Logout function
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:5000/auth/logout", {
         method: "POST",
         credentials: "include",
       });
-      window.location.href = "/"; // redirect to home and refresh
+      window.location.href = "/";
     } catch (err) {
       console.error("Logout failed", err);
     }
@@ -72,6 +89,19 @@ const InstructorHeader = ({ instructor }) => {
     if (!notifOpen) setDropdownOpen(false);
   };
 
+  // Delete a notification
+  const handleDeleteNotification = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/notifications/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+    } catch (err) {
+      console.error("Failed to delete notification", err);
+    }
+  };
+
   return (
     <header
       className="instructor-header"
@@ -93,32 +123,33 @@ const InstructorHeader = ({ instructor }) => {
       {/* Notification Icon */}
       <div
         ref={notifRef}
-        style={{
-          marginRight: "20px",
-          position: "relative",
-          cursor: "pointer",
-        }}
+        style={{ marginRight: "20px", position: "relative", cursor: "pointer" }}
         onClick={toggleNotif}
       >
         <FaBell size={20} color="#000" />
-        <span
-          style={{
-            position: "absolute",
-            top: "-5px",
-            right: "-5px",
-            width: "10px",
-            height: "10px",
-            backgroundColor: "red",
-            borderRadius: "50%",
-          }}
-        />
+        {notifications.length > 0 && (
+          <span
+            style={{
+              position: "absolute",
+              top: "-5px",
+              right: "-5px",
+              width: "10px",
+              height: "10px",
+              backgroundColor: "red",
+              borderRadius: "50%",
+            }}
+          />
+        )}
+
         {notifOpen && (
           <div
             style={{
               position: "absolute",
               top: "25px",
               right: 0,
-              width: "200px",
+              width: "250px",
+              maxHeight: "300px",
+              overflowY: "auto",
               backgroundColor: "#fff",
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
               borderRadius: "5px",
@@ -126,7 +157,36 @@ const InstructorHeader = ({ instructor }) => {
               padding: "10px",
             }}
           >
-            <p className="text-black text-sm">No new notifications</p>
+            {notifications.length === 0 ? (
+              <p className="text-black text-sm">No new notifications</p>
+            ) : (
+              notifications.map((n) => (
+                <div
+                  key={n._id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "5px 0",
+                    borderBottom: "1px solid #e5e7eb",
+                  }}
+                >
+                  <span className="text-sm text-black">{n.message || "Notification"}</span>
+                  <button
+                    onClick={() => handleDeleteNotification(n._id)}
+                    style={{
+                      color: "red",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      border: "none",
+                      background: "transparent",
+                    }}
+                  >
+                    X
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -134,17 +194,10 @@ const InstructorHeader = ({ instructor }) => {
       {/* Instructor Avatar + Name */}
       <div
         ref={dropdownRef}
-        className="instructor-dropdown"
         style={{ position: "relative", cursor: "pointer" }}
         onClick={toggleDropdown}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div
             style={{
               width: "35px",

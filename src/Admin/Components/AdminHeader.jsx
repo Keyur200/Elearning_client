@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaBell } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import "../../styles/InstructorHeader.css"; // you can rename it to Header.css if needed
+import "../../styles/InstructorHeader.css"; // Can rename to Header.css
 
 const AdminHeader = ({ admin }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState(null); // <-- Profile image state
+  const [profileImage, setProfileImage] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
   const navigate = useNavigate();
 
-  const firstLetter = admin?.name
-    ? admin.name.charAt(0).toUpperCase()
-    : "A";
+  const firstLetter = admin?.name ? admin.name.charAt(0).toUpperCase() : "A";
 
   // Fetch admin profile image
   useEffect(() => {
@@ -33,7 +32,24 @@ const AdminHeader = ({ admin }) => {
     fetchProfile();
   }, [admin]);
 
-  // Correct Logout function
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/notifications", {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch notifications");
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  // Logout function
   const handleLogout = async () => {
     try {
       localStorage.removeItem("user"); // remove token or user info
@@ -60,9 +76,7 @@ const AdminHeader = ({ admin }) => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const toggleDropdown = () => {
@@ -73,6 +87,19 @@ const AdminHeader = ({ admin }) => {
   const toggleNotif = () => {
     setNotifOpen(!notifOpen);
     if (!notifOpen) setDropdownOpen(false);
+  };
+
+  // Delete notification
+  const handleDeleteNotification = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/notifications/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+    } catch (err) {
+      console.error("Failed to delete notification", err);
+    }
   };
 
   return (
@@ -96,32 +123,33 @@ const AdminHeader = ({ admin }) => {
       {/* Notification Icon */}
       <div
         ref={notifRef}
-        style={{
-          marginRight: "20px",
-          position: "relative",
-          cursor: "pointer",
-        }}
+        style={{ marginRight: "20px", position: "relative", cursor: "pointer" }}
         onClick={toggleNotif}
       >
         <FaBell size={20} color="#000" />
-        <span
-          style={{
-            position: "absolute",
-            top: "-5px",
-            right: "-5px",
-            width: "10px",
-            height: "10px",
-            backgroundColor: "red",
-            borderRadius: "50%",
-          }}
-        />
+        {notifications.length > 0 && (
+          <span
+            style={{
+              position: "absolute",
+              top: "-5px",
+              right: "-5px",
+              width: "10px",
+              height: "10px",
+              backgroundColor: "red",
+              borderRadius: "50%",
+            }}
+          />
+        )}
+
         {notifOpen && (
           <div
             style={{
               position: "absolute",
               top: "25px",
               right: 0,
-              width: "220px",
+              width: "250px",
+              maxHeight: "300px",
+              overflowY: "auto",
               backgroundColor: "#fff",
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
               borderRadius: "5px",
@@ -129,7 +157,36 @@ const AdminHeader = ({ admin }) => {
               padding: "10px",
             }}
           >
-            <p className="text-black text-sm">No new notifications</p>
+            {notifications.length === 0 ? (
+              <p className="text-black text-sm">No new notifications</p>
+            ) : (
+              notifications.map((n) => (
+                <div
+                  key={n._id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "5px 0",
+                    borderBottom: "1px solid #e5e7eb",
+                  }}
+                >
+                  <span className="text-sm text-black">{n.message || "Notification"}</span>
+                  <button
+                    onClick={() => handleDeleteNotification(n._id)}
+                    style={{
+                      color: "red",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      border: "none",
+                      background: "transparent",
+                    }}
+                  >
+                    X
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -141,13 +198,7 @@ const AdminHeader = ({ admin }) => {
         style={{ position: "relative", cursor: "pointer" }}
         onClick={toggleDropdown}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div
             style={{
               width: "35px",
