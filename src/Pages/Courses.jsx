@@ -23,7 +23,9 @@ const Courses = () => {
         const { data } = await axios.get("http://localhost:5000/api/courses");
 
         if (data.courses) {
-          setCourses(data.courses);
+          const publishedCourses = data.courses.filter(c => c.isPublished === true);
+
+          setCourses(publishedCourses);
 
           // Dynamically extract unique categories from the fetched data
           const uniqueCategories = [

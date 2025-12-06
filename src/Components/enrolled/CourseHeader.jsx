@@ -1,12 +1,46 @@
 import React from "react";
-import { ArrowLeft, Menu, Award } from "lucide-react";
-
-const CourseHeader = ({ title, onToggleSidebar, user, progress = 0 }) => {
+import { ArrowLeft, Menu, Award, X } from "lucide-react";
+import { useState } from "react";
+import axios from 'axios'
+import { useAuth } from "../../Context/UserContext";
+const CourseHeader = ({ title,courseId, onToggleSidebar, progress = 0 }) => {
   const isCompleted = progress === 100;
 
+  const [ user, setUser ] = useAuth();
+
+  const [open, setOpen] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [review, setReview] = useState("");
+  const [loading, setLoading] = useState(false);
+  console.log(user)
+  const submitRating = async () => {
+
+    setLoading(true);
+
+    try {
+      const res = await axios.post(`http://localhost:5000/api/rating/${courseId}/${user?._id}`,
+        {
+          rating,
+          review
+        }
+      );
+
+      console.log("API Response:", res.data);
+
+      setOpen(false);
+      setRating(0);
+      setReview("");
+
+    } catch (error) {
+      console.log(error);
+    }
+
+    setLoading(false);
+  };
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 z-30 shrink-0 gap-4">
-      
+
       {/* --- Left: Back & Title --- */}
       <div className="flex items-center gap-4 min-w-0 shrink">
         <button
@@ -38,7 +72,7 @@ const CourseHeader = ({ title, onToggleSidebar, user, progress = 0 }) => {
 
       {/* --- Right: Profile & Actions --- */}
       <div className="flex items-center gap-3 shrink-0">
-        
+
         {/* Certificate Button (only if course completed) */}
         {isCompleted && (
           <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors animate-fade-in">
@@ -46,6 +80,11 @@ const CourseHeader = ({ title, onToggleSidebar, user, progress = 0 }) => {
             <span>Get Certificate</span>
           </button>
         )}
+
+        <button onClick={() => setOpen(true)} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors animate-fade-in">
+          <Award size={16} />
+          <span>Add Rating</span>
+        </button>
 
         {/* User Avatar */}
         <div className="relative group cursor-pointer">
@@ -70,7 +109,70 @@ const CourseHeader = ({ title, onToggleSidebar, user, progress = 0 }) => {
           <Menu size={20} />
         </button>
       </div>
+      {open && (
+        <div className="fixed inset-0  bg-opacity-40 flex items-center justify-center z-50 animate-fade-in">
+
+          <div className="bg-white w-full max-w-md mx-4 rounded-xl shadow-xl p-6 relative animate-scale-in">
+
+            {/* Close */}
+            <button
+              onClick={() => setOpen(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+            >
+              <X size={20} />
+            </button>
+
+            <h2 className="text-lg font-semibold mb-4">Add Rating</h2>
+
+            {/* Stars */}
+            <div className="flex gap-1 mb-4 text-2xl">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  onMouseEnter={() => setHover(star)}
+                  onMouseLeave={() => setHover(0)}
+                  onClick={() => setRating(star)}
+                  className={`cursor-pointer ${(hover || rating) >= star
+                      ? "text-yellow-400"
+                      : "text-gray-300"
+                    }`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+
+            {/* Review */}
+            <textarea
+              value={review}
+              onChange={(e) => setReview(e.target.value)}
+              placeholder="Write your review..."
+              className="w-full border rounded-lg p-3 h-28 focus:ring-2 focus:ring-emerald-400 outline-none"
+            />
+
+            {/* Buttons */}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setOpen(false)}
+                className="px-4 py-2 rounded-lg border"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={submitRating}
+                className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                Submit
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </header>
+
+
   );
 };
 

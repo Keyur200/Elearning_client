@@ -13,6 +13,7 @@ import CategoryList from "./Pages/Category/CategoryList";
 import AddCategory from "./Pages/Category/AddCategory";
 import EditCategory from "./Pages/Category/EditCategory";
 import Category from "./Pages/Category";
+import CourseWithEnroll from "./Pages/CourseWithEnroll";
 
 const AdminApp = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -47,7 +48,7 @@ const AdminApp = () => {
             <Route path="/manage-users" element={<ManageUsers />} />
             <Route path="/All-courses" element={<ManageCourses />} />
             <Route path="/category/*" element={<Category />} />
-
+            <Route path="/enrolle" element={<CourseWithEnroll />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/faq" element={<FAQ />} />
           </Routes>

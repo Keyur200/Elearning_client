@@ -13,7 +13,7 @@ import { useAuth } from "../Context/UserContext";
 
 const EnrolledCourse = () => {
   const { id } = useParams();
-  const { user } = useAuth(); // Logged-in user
+  const [ user, setUser ] = useAuth(); 
 
   const [course, setCourse] = useState(null);
   const [sections, setSections] = useState([]);
@@ -23,12 +23,7 @@ const EnrolledCourse = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
 
-  // ───────────────────────────────────────────
-  // Fetch profile image for logged-in user
-  // ───────────────────────────────────────────
-// ───────────────────────────────────────────
-// Fetch profile image for logged-in user
-// ───────────────────────────────────────────
+
 useEffect(() => {
   const fetchProfileImage = async () => {
     if (!user) return;
@@ -176,13 +171,10 @@ const getUserAvatar = (u) => {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-      {/* Header receives:
-         - Title
-         - User object merged with the fetched profile image
-         - Progress percentage for the bar
-      */}
+     
       <CourseHeader
         title={course.title}
+        courseId={course._id}
         user={{
           ...user,
           profileImage: profileImage,
