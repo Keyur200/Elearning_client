@@ -87,7 +87,7 @@ const Navbar = () => {
             className="text-2xl font-bold cursor-pointer"
             onClick={() => navigate("/")}
           >
-            ELearning
+            LearnHub
           </div>
 
           {/* Desktop Nav Links */}

@@ -47,7 +47,7 @@ const InstructorSidebar = ({ instructor, onLogout, isCollapsed, setIsCollapsed }
     { name: "Create Course", icon: <FaChalkboardTeacher />, path: "/instructor/create-course" },
     { name: "Students", icon: <FaUserGraduate />, path: "/instructor/students" },
     { name: "FAQ", icon: <FaQuestionCircle />, path: "/instructor/faq" },
-    { name: "Settings", icon: <FaCog />, path: "/instructor/settings" },
+    // { name: "Settings", icon: <FaCog />, path: "/instructor/settings" },
   ];
 
   return (

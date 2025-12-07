@@ -20,6 +20,8 @@
     "file-saver": "^2.0.5",
     "formik": "^2.4.6",
     "framer-motion": "^12.23.25",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.555.0",
     "papaparse": "^5.5.3",
@@ -33,6 +35,7 @@
     "react-pro-sidebar": "^1.1.0",
     "react-razorpay": "^3.0.1",
     "react-router-dom": "^7.9.1",
+    "recharts": "^3.5.1",
     "sweetalert2": "^11.26.2",
     "tailwindcss": "^4.1.13",
     "yup": "^1.7.1"

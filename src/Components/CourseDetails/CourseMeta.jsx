@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Star } from "lucide-react";
+import axios from "axios"; // Added axios
 
 const CourseMeta = ({ course }) => {
   const [profileImage, setProfileImage] = useState(null);
+  
+  // 🟢 State for dynamic ratings
+  const [ratingStats, setRatingStats] = useState({ average: 0, count: 0 });
 
-  // Fetch instructor profile image
   useEffect(() => {
+    if (!course?._id) return;
+
+    // 1. Fetch Instructor Profile Image
     const fetchInstructorProfile = async () => {
       if (!course?.instructorId?._id) return;
 
@@ -23,7 +29,25 @@ const CourseMeta = ({ course }) => {
       }
     };
 
+    // 2. 🟢 Fetch Course Ratings from Database
+    const fetchRatingStats = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/api/rating/average/${course._id}`
+        );
+        if (res.data.success) {
+          setRatingStats({
+            average: res.data.average || 0,
+            count: res.data.totalRatings || 0,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load ratings", error);
+      }
+    };
+
     fetchInstructorProfile();
+    fetchRatingStats();
   }, [course]);
 
   const instructorName = course?.instructorId?.name || "Unknown Instructor";
@@ -69,14 +93,16 @@ const CourseMeta = ({ course }) => {
 
         <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
 
-        {/* Rating */}
+        {/* 🟢 Rating (Fetched from DB) */}
         <div>
           <div className="flex items-center gap-1 text-yellow-400">
-            <Star className="w-4 h-4" />
-            <span className="text-slate-900 font-bold">{course.rating}</span>
+            <Star className="w-4 h-4 fill-current" />
+            <span className="text-slate-900 font-bold">
+              {ratingStats.average.toFixed(1)}
+            </span>
           </div>
           <p className="text-xs text-slate-400">
-            ({course.reviews} Reviews)
+            ({ratingStats.count} Reviews)
           </p>
         </div>
 

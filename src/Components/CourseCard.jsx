@@ -6,13 +6,17 @@ import axios from 'axios';
 const CourseCard = ({ course }) => {
   const navigate = useNavigate();
   const [profileImage, setProfileImage] = useState(null);
-  const [isEnrolled, setIsEnrolled] = useState(false); // 🔥 NEW
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  
+  // 🟢 Rating State
   const [avgRating, setAvgRating] = useState(0);
   const [totalRatings, setTotalRatings] = useState(0);
+
   // ===========================
-  // CHECK IF USER IS ENROLLED
+  // CHECK IF USER IS ENROLLED & FETCH RATINGS
   // ===========================
   useEffect(() => {
+    // 1. Check Enrollment
     const checkEnrollment = async () => {
       try {
         const res = await fetch(
@@ -27,22 +31,25 @@ const CourseCard = ({ course }) => {
       }
     };
 
+    // 2. 🟢 Fetch Average Rating from API
     const fetchAverage = async () => {
       try {
         const { data } = await axios.get(
           `http://localhost:5000/api/rating/average/${course._id}`
         );
-
-        setAvgRating(data.average);
-        setTotalRatings(data.totalRatings);
-
+        if (data.success) {
+          setAvgRating(data.average || 0);
+          setTotalRatings(data.totalRatings || 0);
+        }
       } catch (error) {
         console.log("Error fetching avg rating:", error);
       }
     };
 
-    fetchAverage();
-    checkEnrollment();
+    if (course?._id) {
+      fetchAverage();
+      checkEnrollment();
+    }
   }, [course]);
 
   // ===========================
@@ -97,7 +104,6 @@ const CourseCard = ({ course }) => {
           src={course.thumbnail || "https://via.placeholder.com/400x225?text=No+Image"}
           alt={course.title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-          // onError={(e) => { e.target.src = "https://via.placeholder.com/400x225?text=Course+Image"; }}
         />
         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-indigo-700 uppercase tracking-wide shadow-sm">
           {categoryName}
@@ -107,14 +113,21 @@ const CourseCard = ({ course }) => {
       {/* Content Section */}
       <div className="p-5 flex flex-col flex-1">
 
-        {/* Rating */}
+        {/* 🟢 Updated Rating Display */}
         <div className="flex items-center gap-1 mb-2 text-yellow-400 text-xs font-bold">
           <Star className="w-3.5 h-3.5 fill-current" />
-          <span className="text-slate-700">{avgRating || 4.5}</span>
-          <span className="text-slate-400 font-normal">({totalRatings || 0})</span>
+          <span className="text-slate-700">
+            {avgRating > 0 ? avgRating.toFixed(1) : "New"}
+          </span>
+          <span className="text-slate-400 font-normal">
+            ({totalRatings} Reviews)
+          </span>
         </div>
 
-        <h3 className="font-bold text-lg text-slate-900 mb-2 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2" title={course.title}>
+        <h3 
+          className="font-bold text-lg text-slate-900 mb-2 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2" 
+          title={course.title}
+        >
           {course.title}
         </h3>
 

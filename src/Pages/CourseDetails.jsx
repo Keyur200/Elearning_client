@@ -4,6 +4,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { useAuth } from "../Context/UserContext";
 
+// Import existing components
 import {
   CourseMeta,
   CourseContentList,
@@ -11,7 +12,10 @@ import {
   VideoPreviewModal,
 } from "../Components/CourseDetails";
 
-import Login from "../Pages/Login"; // Login popup component
+// Import NEW Rating Component
+import CourseRating from "../Components/CourseDetails/CourseRating"; // 👈 Import this
+
+import Login from "../Pages/Login";
 
 const CourseDetails = () => {
   const [user] = useAuth();
@@ -28,9 +32,7 @@ const CourseDetails = () => {
 
   const [showLogin, setShowLogin] = useState(false);
 
-  // =====================================================
-  // LOAD RAZORPAY SCRIPT
-  // =====================================================
+  // --- Razorpay & Payment Logic (Kept same as yours) ---
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
@@ -41,9 +43,6 @@ const CourseDetails = () => {
     });
   };
 
-  // =====================================================
-  // BUY NOW → RAZORPAY PAYMENT
-  // =====================================================
   const handlePayment = async () => {
     const sdk = await loadRazorpay();
     if (!sdk) {
@@ -52,7 +51,6 @@ const CourseDetails = () => {
     }
 
     try {
-      // 1. CREATE ORDER FROM BACKEND
       const { data } = await axios.post(
         "http://localhost:5000/api/createorder",
         {
@@ -69,7 +67,6 @@ const CourseDetails = () => {
         name: "My Learning App",
         description: courseData.course.title,
         order_id: data.razorpayOrder.id,
-
         handler: async (response) => {
           await axios.post("http://localhost:5000/api/payment", {
             orderId: data.orderId,
@@ -81,38 +78,29 @@ const CourseDetails = () => {
           Swal.fire("Success", "Payment completed!", "success");
           navigate(`/enrolled-course/${courseData.course._id}`);
         },
-
         theme: { color: "#a435f0" },
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      console.error("PAYMENT ERROR:", err);
       Swal.fire("Error", err.response?.data?.message || "Payment failed!", "error");
     }
   };
 
-  // =====================================================
-  // BUY NOW CLICK HANDLER
-  // =====================================================
   const handleBuyNow = () => {
     if (!user?._id) {
       setShowLogin(true);
       return;
     }
-
     if (access) {
       navigate(`/enrolled-course/${courseData.course._id}`);
       return;
     }
-
-    handlePayment(); // Razorpay call
+    handlePayment();
   };
 
-  // =====================================================
-  // LOAD COURSE
-  // =====================================================
+  // --- Fetch Course Data ---
   const getCourse = async () => {
     try {
       const res = await fetch(`http://localhost:5000/api/courses/details/${id}`);
@@ -125,12 +113,8 @@ const CourseDetails = () => {
     }
   };
 
-  // =====================================================
-  // CHECK ACCESS (PURCHASED OR NOT)
-  // =====================================================
   const checkAccess = async () => {
     if (!user?._id) return;
-
     try {
       const { data } = await axios.get(
         `http://localhost:5000/api/course/${id}/access`,
@@ -142,23 +126,15 @@ const CourseDetails = () => {
     }
   };
 
-  // =====================================================
-  // PREVIEW VIDEO HANDLERS
-  // =====================================================
   const handleOpenPreview = (videos, index) => {
     const previews = videos.filter((v) => v.isPreview);
-
     const clickedId = videos[index]._id;
     const newIndex = previews.findIndex((v) => v._id === clickedId);
-
     setPreviewVideos(previews);
     setCurrentIndex(newIndex === -1 ? 0 : newIndex);
     setOpenPreview(true);
   };
 
-  // =====================================================
-  // LOAD EVERYTHING
-  // =====================================================
   useEffect(() => {
     getCourse();
     checkAccess();
@@ -167,8 +143,7 @@ const CourseDetails = () => {
   if (loading) return <p>Loading...</p>;
   if (!courseData) return <p>Course not found</p>;
 
-  const { course, sections, totalDuration, totalSections, totalVideos } =
-    courseData;
+  const { course, sections, totalDuration, totalSections, totalVideos } = courseData;
 
   return (
     <>
@@ -181,6 +156,15 @@ const CourseDetails = () => {
               sections={sections}
               handleOpenPreview={handleOpenPreview}
             />
+            
+            {/* 🟢 NEW: Rating Component Here */}
+            {/* Pass courseId, access (true/false), and user object */}
+            <CourseRating 
+                courseId={course._id} 
+                access={access} 
+                user={user} 
+            />
+
           </div>
 
           {/* RIGHT SIDE - SIDEBAR */}
@@ -202,12 +186,8 @@ const CourseDetails = () => {
         isOpen={openPreview}
         onClose={() => setOpenPreview(false)}
         video={previewVideos[currentIndex]}
-        onNext={() =>
-          setCurrentIndex((i) => Math.min(i + 1, previewVideos.length - 1))
-        }
-        onPrev={() =>
-          setCurrentIndex((i) => Math.max(i - 1, 0))
-        }
+        onNext={() => setCurrentIndex((i) => Math.min(i + 1, previewVideos.length - 1))}
+        onPrev={() => setCurrentIndex((i) => Math.max(i - 1, 0))}
       />
 
       {/* LOGIN POPUP */}

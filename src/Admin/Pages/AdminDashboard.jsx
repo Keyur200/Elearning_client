@@ -1,255 +1,286 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
-  UsersIcon, BookOpenIcon, ChartBarIcon, CurrencyDollarIcon, 
-  ArrowTrendingUpIcon, GlobeAltIcon, UserGroupIcon, BuildingOffice2Icon,
-  PresentationChartLineIcon, CheckCircleIcon, XCircleIcon
-} from '@heroicons/react/24/outline';
+  Users, 
+  GraduationCap, 
+  BookOpen, 
+  DollarSign, 
+  MoreVertical, 
+  IndianRupee,
+  Loader,
+  TrendingUp 
+} from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from 'recharts';
 
-// Hardcoded API endpoint base (Replace with your actual backend URL)
-const API_BASE_URL = 'http://localhost:5000/api'; 
+const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-// --- API Simulation/Fetch Functions ---
-
-const fetchAdminData = async () => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 800)); 
-
-  // --- DUMMY DATA (Active) ---
-  return {
-    adminName: "Jane Doe", 
-    totalUsers: 15400,
-    totalInstructors: 250, // New Metric
-    totalStudents: 15150, // totalUsers - totalInstructors
-    totalCourses: 450,
-    publishedCourses: 390, // New Metric
-    draftCourses: 60, // New Metric
-    totalRevenue: 245800, 
-    dailyActiveUsers: 3450,
-    totalPayouts: 180500, // New Metric
-    latestActivity: [
-      { id: 1, type: "New Course", user: "Jane Instructor", detail: "Advanced React Patterns published", time: "2 min ago", color: "text-green-600" },
-      { id: 2, type: "Payment Failure", user: "User 5678", detail: "Order #9921 failed processing", time: "1 hour ago", color: "text-red-600" },
-      { id: 3, type: "New Instructor", user: "Dr. Ben Smith", detail: "Profile approved for teaching", time: "3 hours ago", color: "text-blue-600" },
-      { id: 4, type: "User Banned", user: "Troll Hunter", detail: "User 1234 flagged for spamming", time: "4 hours ago", color: "text-pink-600" },
-    ],
-    // The moderation queue is kept for the new Content Performance section, but less critical
-    moderationQueue: [
-      { id: 1, type: "Video", content: "Needs closed captions review.", user: "Course 105", severity: "Medium" },
-      { id: 2, type: "Image", content: "Logo misuse detected in thumbnail.", user: "Course 201", severity: "Low" },
-    ]
-  };
-};
-
-// --- UTILITY HOOK & COMPONENTS ---
-
-const useFetchData = (fetchFn) => {
-  const [data, setData] = useState(null);
+const AdminDashboard = () => {
+  // --- State for API Data ---
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    totalInstructors: 0,
+    totalCourses: 0,
+    totalRevenue: 0
+  });
+  const [salesData, setSalesData] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
+  const [recentUsers, setRecentUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
-  const fetchDataMemoized = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    fetchFn()
-      .then(setData)
-      .catch(e => {
-        console.error("Fetch failed:", e);
-        setError(e);
-      })
-      .finally(() => setLoading(false));
-  }, [fetchFn]);
-
+  // --- Fetch Data from API ---
   useEffect(() => {
-    fetchDataMemoized();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchDashboardData();
   }, []);
 
-  return { data, loading, error, refetch: fetchDataMemoized };
-};
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch all endpoints in parallel for better performance
+      const [statsRes, salesRes, revenueRes, usersRes] = await Promise.all([
+        axios.get("http://localhost:5000/api/report/stats", { withCredentials: true }),
+        axios.get("http://localhost:5000/api/report/daily-sales", { withCredentials: true }),
+        axios.get("http://localhost:5000/api/report/category-revenue", { withCredentials: true }),
+        axios.get("http://localhost:5000/api/report/recent-users", { withCredentials: true })
+      ]);
 
-const LoadingSpinner = () => (
-  <div className="flex justify-center items-center p-10">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-    <p className="ml-3 text-indigo-600 font-medium">Loading Dashboard Data...</p>
-  </div>
-);
+      // Update State if requests are successful
+      if (statsRes.data.success) setStats(statsRes.data.data);
+      if (salesRes.data.success) setSalesData(salesRes.data.data);
+      if (revenueRes.data.success) setRevenueData(revenueRes.data.data);
+      if (usersRes.data.success) setRecentUsers(usersRes.data.data);
 
-const ChartPlaceholder = ({ title, description, colorClass, icon: Icon, height = 'h-64' }) => (
-  <div className={`bg-white p-6 rounded-2xl shadow-xl flex flex-col justify-between transition-all hover:shadow-2xl border border-gray-100 ${height}`}>
-    <div>
-        <div className={`flex items-center mb-4 ${colorClass}`}>
-          <Icon className="w-6 h-6 mr-2" />
-          <h3 className="text-xl font-bold text-gray-800 font-semibold">{title}</h3>
-        </div>
-        <div className={`text-sm italic text-gray-400 mb-2`}>{description}</div>
-    </div>
-    <div className={`${height === 'h-64' ? 'h-48' : 'h-full'} w-full ${colorClass.replace('text-', 'bg-')}/10 rounded-xl flex items-center justify-center cursor-pointer transition-transform hover:scale-[1.01]`}>
-      <p className={`${colorClass.replace('text-', 'text-')} font-medium text-center p-4`}>Interactive Chart Area (e.g., D3/Recharts)</p>
-    </div>
-  </div>
-);
-
-const StatCard = ({ icon: Icon, title, value, unit, color }) => (
-  <div className={`bg-white p-5 rounded-2xl shadow-lg flex flex-col justify-between transform transition duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer border-t-4 ${color.replace('bg-', 'border-')}-600`}>
-    <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}-600/80`} />
-    </div>
-    <p className="text-3xl font-extrabold text-gray-900 mt-2">
-      {unit === '₹' && <span className="text-xl font-medium mr-1">₹</span>}
-      {value !== null && value !== undefined ? value.toLocaleString() : '---'}
-      <span className="text-lg font-normal ml-1 text-gray-600">{unit !== '₹' ? unit : ''}</span>
-    </p>
-  </div>
-);
-
-
-// --- ADMIN DASHBOARD COMPONENT ---
-const AdminDashboard = () => {
-  const { data, loading, error } = useFetchData(fetchAdminData);
-
-  const adminData = data || {
-    adminName: "Admin", totalUsers: 0, totalInstructors: 0, totalStudents: 0, totalCourses: 0, 
-    publishedCourses: 0, draftCourses: 0, totalRevenue: 0, dailyActiveUsers: 0, totalPayouts: 0,
-    latestActivity: [], moderationQueue: []
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      setError("Failed to load dashboard data. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (error) return <div className="p-8 text-center text-red-600 bg-red-50">Error loading data. Please check console for details.</div>;
+  // --- Loading State ---
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[80vh]">
+        <Loader className="animate-spin text-indigo-600 mb-2" size={40} />
+        <p className="text-gray-500 font-medium">Loading Dashboard Insights...</p>
+      </div>
+    );
+  }
 
-  const { 
-    adminName, totalUsers, totalInstructors, totalStudents, totalCourses, 
-    publishedCourses, draftCourses, totalRevenue, dailyActiveUsers, totalPayouts, 
-    latestActivity, moderationQueue 
-  } = adminData;
-
-  const instructorStudentRatio = totalStudents && totalInstructors ? (totalStudents / totalInstructors).toFixed(1) : '0';
+  // --- Error State ---
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[80vh]">
+        <div className="text-center p-8 bg-red-50 rounded-xl border border-red-100">
+          <p className="text-red-600 font-medium text-lg mb-2">Oops!</p>
+          <p className="text-gray-600">{error}</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
-      <header className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">🚀 Admin Overview, {adminName}</h1>
-          <p className="text-md sm:text-lg text-gray-600">Central hub for E-Learning platform performance and management.</p>
+    <div className="min-h-screen bg-gray-50 p-6 md:p-12 font-sans">
+        
+      <div className="max-w-7xl mx-auto space-y-8">
+        
+        {/* Dashboard Title - Report Button Removed */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
+            <div>
+                <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+                <p className="text-gray-500 mt-1">Welcome back, Admin. Here is your platform summary.</p>
+            </div>
         </div>
-        <button className="mt-4 sm:mt-0 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:bg-indigo-700 transition-colors transform hover:translate-y-[-1px]">
-          Generate Financial Report
-        </button>
-      </header>
-      
-      {loading && <LoadingSpinner />}
 
-      {!loading && (
-        <>
-        {/* 1. Core Platform Metrics (Simplified) */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Core Financial & User Metrics</h2>
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-          <StatCard icon={UsersIcon} title="Total Users" value={totalUsers} unit="" color="bg-indigo-50" />
-          <StatCard icon={GlobeAltIcon} title="Active Daily" value={dailyActiveUsers} unit="" color="bg-blue-50" />
-          <StatCard icon={CurrencyDollarIcon} title="Total Revenue" value={totalRevenue} unit="₹" color="bg-yellow-50" />
-          <StatCard icon={BuildingOffice2Icon} title="Total Payouts" value={totalPayouts} unit="₹" color="bg-pink-50" />
-        </section>
-        
-        {/* 1. User Account Health (New Section - Focus on Instructor/Student Mix) */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">User Account Health</h2>
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-            <StatCard icon={UserGroupIcon} title="Total Students" value={totalStudents} unit="" color="bg-teal-50" />
-            <StatCard icon={UsersIcon} title="Total Instructors" value={totalInstructors} unit="" color="bg-cyan-50" />
-            
-            {/* Custom Ratio Card */}
-            <div className={`bg-white p-5 rounded-2xl shadow-lg flex flex-col justify-between transform transition duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer border-t-4 border-orange-600`}>
-                <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-500">Student/Instructor Ratio</p>
-                    <UserGroupIcon className="w-6 h-6 text-orange-600/80" />
-                </div>
-                <p className="text-3xl font-extrabold text-gray-900 mt-2">
-                    {instructorStudentRatio}:1
-                    <span className="text-lg font-normal ml-1 text-gray-600">ratio</span>
-                </p>
+        {/* 1. Stats Cards Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard 
+            title="Total Students" 
+            value={stats.totalStudents} 
+            icon={<Users size={24} className="text-blue-600" />} 
+            bgColor="bg-blue-100" 
+            trend="Active Learners"
+          />
+          <StatCard 
+            title="Total Instructors" 
+            value={stats.totalInstructors} 
+            icon={<GraduationCap size={24} className="text-green-600" />} 
+            bgColor="bg-green-100" 
+            trend="Verified Teachers"
+          />
+          <StatCard 
+            title="Total Courses" 
+            value={stats.totalCourses} 
+            icon={<BookOpen size={24} className="text-purple-600" />} 
+            bgColor="bg-purple-100" 
+            trend="Platform Content"
+          />
+          <StatCard 
+            title="Total Revenue" 
+            value={`₹${stats.totalRevenue.toLocaleString()}`} 
+            icon={<IndianRupee size={24} className="text-yellow-600" />} 
+            bgColor="bg-yellow-100" 
+            trend="Lifetime Earnings"
+          />
+        </div>
+
+        {/* 2. Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Bar Chart: Daily Sales */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Daily Sales (Last 7 Days)</h3>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} fontSize={12} tick={{fill: '#6b7280'}} />
+                  <YAxis axisLine={false} tickLine={false} fontSize={12} tick={{fill: '#6b7280'}} />
+                  <Tooltip 
+                    cursor={{ fill: '#f9fafb' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                  />
+                  <Bar dataKey="sales" fill="#4F46E5" radius={[4, 4, 0, 0]} barSize={40} name="Orders" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-        </section>
-
-        {/* 2. Charts & Insights */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-10">
-          {/* Main Chart */}
-          <div className="lg:col-span-3">
-            <ChartPlaceholder 
-              title="Monthly Enrollment & Revenue Trend" 
-              description="Year-over-Year comparison for Q3 performance" 
-              colorClass="text-indigo-600"
-              icon={ArrowTrendingUpIcon}
-              height="h-[400px]"
-            />
           </div>
-          {/* Category Distribution */}
-          <div className="lg:col-span-2">
-            <ChartPlaceholder 
-              title="Course Category Distribution" 
-              description="Breakdown of active courses by top 5 categories" 
-              colorClass="text-purple-600"
-              icon={ChartBarIcon}
-              height="h-[400px]"
-            />
-          </div>
-        </section>
 
-        
-       
-
-        {/* 5. Live Activity Feed (Now at the bottom, taking full width for detail) */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Latest Platform Activity</h2>
-        <section className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
-            
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-              {latestActivity.length > 0 ? latestActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start border-l-4 border-gray-200 pl-4 py-3 hover:bg-gray-50 rounded-md transition-colors">
-                  <div className={`w-2 h-2 rounded-full mt-2 mr-3 ${activity.color.replace('text-', 'bg-')}`}></div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-gray-900 font-medium truncate">{activity.type}: <span className="font-normal text-gray-700">{activity.detail}</span></p>
-                    <p className="text-xs text-gray-500 mt-0.5">{activity.user} • {activity.time}</p>
-                  </div>
-                  <button className="text-xs text-indigo-500 hover:text-indigo-700 font-medium ml-4 shrink-0">
-                    View
-                  </button>
-                </div>
-              )) : <p className="text-gray-500 italic p-4">No recent activity.</p>}
+          {/* Pie Chart: Revenue by Category */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Revenue by Category</h3>
+            <div className="h-72 flex justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={revenueData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {revenueData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle"/>
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-        </section>
-        </>
-      )}
+          </div>
+
+        </div>
+
+        {/* 3. Recent Users Table (Filtered for Users and Instructors by API/Logic) */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 className="text-lg font-bold text-gray-800">Recent User Registrations</h3>
+            <button className="text-indigo-600 text-sm font-medium hover:text-indigo-800 transition">View All Users</button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">User Name</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Role</th>
+                  <th className="px-6 py-4">Join Date</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {recentUsers.length > 0 ? (
+                  recentUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50 transition duration-150">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs uppercase">
+                            {user.name.charAt(0)}
+                          </div>
+                          <p className="font-semibold text-gray-800 text-sm">{user.name}</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
+                            user.role === 'Instructor' 
+                              ? 'bg-purple-100 text-purple-700' 
+                              : 'bg-blue-100 text-blue-700'
+                        }`}>
+                            {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{user.joinDate}</td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 flex w-fit items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition">
+                          <MoreVertical size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
+                      <div className="flex flex-col items-center gap-2">
+                        <Users size={32} className="opacity-20" />
+                        <p>No recent users found.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };
 
+// Helper Component for Stats Cards
+const StatCard = ({ title, value, icon, bgColor, trend }) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition duration-200">
+    <div>
+      <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+      <h4 className="text-2xl font-bold text-gray-900">{value}</h4>
+      <p className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
+        <TrendingUp size={12} />
+        {trend}
+      </p>
+    </div>
+    <div className={`p-3 rounded-lg ${bgColor} bg-opacity-80`}>
+      {icon}
+    </div>
+  </div>
+);
+
 export default AdminDashboard;
-
-
-
-
-
-
-
-
-
-
-
- {/* 4'th Seection. Content Performance Overview (New Section - Focus on Course Status) */}
-        // <h2 className="text-2xl font-bold text-gray-800 mb-4">Content Performance Overview</h2>
-        // <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-        //     <StatCard icon={CheckCircleIcon} title="Published Courses" value={publishedCourses} unit="" color="bg-green-50" />
-        //     <StatCard icon={XCircleIcon} title="Courses In Draft" value={draftCourses} unit="" color="bg-red-50" />
-            
-            {/* Content Moderation Status (Re-purposed from old queue) */}
-            {/* <div className="bg-white p-6 rounded-2xl shadow-xl border-t-4 border-yellow-600">
-                <h3 className="text-xl font-bold text-gray-800 mb-2 flex items-center">
-                    <PresentationChartLineIcon className="w-6 h-6 mr-2 text-yellow-600" />
-                    Content Moderation Backlog
-                </h3>
-                <p className="text-3xl font-extrabold text-yellow-600 mb-4">{moderationQueue.length}</p>
-                <p className="text-sm text-gray-600">
-                    Pending assets or content needing approval/review.
-                </p>
-                <button className="mt-3 text-sm font-medium text-yellow-600 hover:text-yellow-700">
-                    View Moderation Queue &rarr;
-                </button>
-            </div>
-        </section> */}

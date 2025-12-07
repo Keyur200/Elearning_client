@@ -9,10 +9,12 @@ import Login from "./Pages/Login";
 import Register from "./Pages/Register";
 import CourseDetails from "./Pages/CourseDetails";
 import EnrolledCourse from "./Pages/EnrolledCourse";
+// import Certificate from "./Pages/Certificate"; // 🟢 Import Certificate
 
 import About from "./Pages/About";
 import Contact from "./Pages/Contact";
 import Courses from "./Pages/Courses";
+import FAQ from "./Pages/FAQ"; // 🟢 Import FAQ
 
 import ProtectedRoute from "./Components/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
@@ -26,8 +28,8 @@ function AppWrapper() {
   const [showRegister, setShowRegister] = useState(false);
   const location = useLocation();
 
-  // Hide navbar/footer on dashboards
-  const hideBarPaths = ["/admin", "/instructor", "/profile"];
+  // Hide navbar/footer on dashboards AND certificate page
+  const hideBarPaths = ["/admin", "/instructor", "/profile", "/certificate"]; // 🟢 Added /certificate
   const showBars = !hideBarPaths.some((path) =>
     location.pathname.startsWith(path)
   );
@@ -59,13 +61,20 @@ function AppWrapper() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/faq" element={<FAQ />} /> {/* 🟢 FAQ Route */}
           <Route path="/courses" element={<Courses />} />
           <Route path="/course/:id" element={<CourseDetails />} />
 
-          {/* Enrolled Course */}
-          <Route path="/enrolled-course/:id" element={<EnrolledCourse />} />
+          {/* Protected Routes */}
+          <Route 
+            path="/enrolled-course/:id" 
+            element={
+              <ProtectedRoute>
+                <EnrolledCourse />
+              </ProtectedRoute>
+            } 
+          />
 
-          {/* Profile */}
           <Route
             path="/profile"
             element={
@@ -74,6 +83,16 @@ function AppWrapper() {
               </ProtectedRoute>
             }
           />
+
+          {/* 🟢 Certificate Route
+          <Route
+            path="/certificate"
+            element={
+              <ProtectedRoute>
+                <Certificate />
+              </ProtectedRoute>
+            }
+          /> */}
 
           {/* Admin */}
           <Route

@@ -26,8 +26,8 @@ const AdminSidebar = ({ admin, isCollapsed, setIsCollapsed }) => {
     { name: "All Courses", icon: <FaBookOpen />, path: "/admin/All-courses" },
     { name: "Category", icon: <FaLayerGroup />, path: "/admin/category" },
     { name: "All Course with Enrolls", icon: <FaChartBar />, path: "/admin/enrolle" },
-    { name: "Reports", icon: <FaChartBar />, path: "/admin/reports" },
-    { name: "FAQ", icon: <FaQuestionCircle />, path: "/admin/faq" },
+    // { name: "Reports", icon: <FaChartBar />, path: "/admin/reports" },
+    // { name: "FAQ", icon: <FaQuestionCircle />, path: "/admin/faq" },
   ];
 
   // Fetch admin profile image dynamically
