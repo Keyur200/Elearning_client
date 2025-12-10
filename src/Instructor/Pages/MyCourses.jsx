@@ -44,8 +44,8 @@ export default function MyCourses() {
 
   const fetchCourses = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/courses", {
-        credentials: "include", // ✅ send HttpOnly cookie automatically
+      const res = await fetch("http://localhost:5000/api/mycourses", {
+        credentials: "include", 
       });
       if (res.status === 401) {
         Swal.fire("Unauthorized", "Please login to access this page.", "error");
