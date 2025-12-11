@@ -11,18 +11,23 @@ export default function AddCategory() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name) return Swal.fire("Error", "Category name is required.", "error");
+
+    if (!name)
+      return Swal.fire("Error", "Category name is required.", "error");
+
+    if (!image)
+      return Swal.fire("Error", "Please choose category image.", "error");
 
     try {
       const formData = new FormData();
       formData.append("name", name);
       formData.append("description", description);
-      if (image) formData.append("image", image);
+      formData.append("image", image); // must match Multer field name
 
       const res = await fetch("http://localhost:5000/api/categories", {
         method: "POST",
-        credentials: "include", // important for HttpOnly cookie
-        body: formData
+        credentials: "include",
+        body: formData,
       });
 
       if (res.status === 401) {
@@ -31,10 +36,12 @@ export default function AddCategory() {
         return;
       }
 
-      if (!res.ok) throw new Error("Failed to add category");
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Failed to add category");
 
       Swal.fire("Success", "Category added successfully.", "success");
-      navigate("/admin/category"); // Redirect to list
+      navigate("/admin/category");
     } catch (err) {
       Swal.fire("Error", err.message, "error");
     }
@@ -43,6 +50,7 @@ export default function AddCategory() {
   return (
     <Paper sx={{ width: "50%", p: 4, mx: "auto", mt: 5 }}>
       <Typography variant="h5" sx={{ mb: 3 }}>Add Category</Typography>
+
       <form onSubmit={handleSubmit}>
         <Stack spacing={2}>
           <TextField
@@ -51,6 +59,7 @@ export default function AddCategory() {
             onChange={(e) => setName(e.target.value)}
             required
           />
+
           <TextField
             label="Description"
             value={description}
@@ -58,6 +67,7 @@ export default function AddCategory() {
             multiline
             rows={3}
           />
+
           <Button variant="contained" component="label">
             Upload Image
             <input
@@ -67,9 +77,16 @@ export default function AddCategory() {
               onChange={(e) => setImage(e.target.files[0])}
             />
           </Button>
+
           {image && <Typography>Selected: {image.name}</Typography>}
-          <Button type="submit" variant="contained">Add Category</Button>
-          <Button variant="outlined" onClick={() => navigate("/category")}>Cancel</Button>
+
+          <Button type="submit" variant="contained">
+            Add Category
+          </Button>
+
+          <Button variant="outlined" onClick={() => navigate("/admin/category")}>
+            Cancel
+          </Button>
         </Stack>
       </form>
     </Paper>

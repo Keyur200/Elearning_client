@@ -6,17 +6,19 @@ import {
   FaChalkboardTeacher,
   FaBookOpen,
   FaQuestionCircle,
-  FaCog,
   FaSignOutAlt,
   FaChevronLeft,
   FaChevronRight,
 } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../Context/UserContext"; // assuming you have this
 import "../../styles/InstructorSidebar.css";
 
-const InstructorSidebar = ({ instructor, onLogout, isCollapsed, setIsCollapsed }) => {
+const InstructorSidebar = ({ instructor, isCollapsed, setIsCollapsed }) => {
   const [selected, setSelected] = useState("Dashboard");
-  const [profileImage, setProfileImage] = useState(null); // <-- profile image state
+  const [profileImage, setProfileImage] = useState(null);
+  const navigate = useNavigate();
+  const [user, setUser] = useAuth(); // context state
 
   const firstLetter = instructor?.name
     ? instructor.name.charAt(0).toUpperCase()
@@ -32,13 +34,27 @@ const InstructorSidebar = ({ instructor, onLogout, isCollapsed, setIsCollapsed }
         });
         if (!res.ok) return;
         const data = await res.json();
-        setProfileImage(data.image || null);
+        setProfileImage(data.profile?.image || null);
       } catch (err) {
         console.error("Failed to fetch profile image", err);
       }
     };
     fetchProfile();
   }, [instructor]);
+
+  // Logout function
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:5000/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null); // clear user state
+      navigate("/"); // redirect to homepage
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
 
   // Sidebar Menu Items
   const menuItems = [
@@ -47,7 +63,6 @@ const InstructorSidebar = ({ instructor, onLogout, isCollapsed, setIsCollapsed }
     { name: "Create Course", icon: <FaChalkboardTeacher />, path: "/instructor/create-course" },
     { name: "Students", icon: <FaUserGraduate />, path: "/instructor/students" },
     { name: "FAQ", icon: <FaQuestionCircle />, path: "/instructor/faq" },
-    // { name: "Settings", icon: <FaCog />, path: "/instructor/settings" },
   ];
 
   return (
@@ -119,7 +134,7 @@ const InstructorSidebar = ({ instructor, onLogout, isCollapsed, setIsCollapsed }
           {/* Logout */}
           <MenuItem
             icon={<FaSignOutAlt color="#000" />}
-            onClick={onLogout}
+            onClick={handleLogout} // use updated logout
             style={{ color: "#000", marginTop: "20px" }}
           >
             Logout

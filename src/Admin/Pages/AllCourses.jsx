@@ -17,14 +17,12 @@ import {
   MenuItem,
   InputAdornment,
 } from "@mui/material";
-import AddCircleIcon from "@mui/icons-material/AddCircle";
 import PublishIcon from "@mui/icons-material/Publish";
 import UnpublishedIcon from "@mui/icons-material/DoNotDisturbOn";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import Swal from "sweetalert2";
 import axios from "axios";
-// import { useNavigate } from "react-router-dom";
 import CourseDetailsPopup from "../Components/CoursePreviewPopup.jsx";
 
 export default function AllCourses() {
@@ -38,12 +36,7 @@ export default function AllCourses() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [open, setOpen] = useState(false);
 
-  // const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchCourses();
-  }, []);
-
+  // Fetch courses from API
   const fetchCourses = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/courses", {
@@ -58,6 +51,11 @@ export default function AllCourses() {
     }
   };
 
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  // Filter and sort
   const handleSearchSort = useCallback(() => {
     let temp = [...courses];
     if (searchTerm) {
@@ -80,16 +78,13 @@ export default function AllCourses() {
     setPage(0);
   };
 
+  // Publish / Unpublish a course
   const togglePublish = async (course) => {
     try {
-      const res = await axios.patch(
+      await axios.patch(
         `http://localhost:5000/api/course/publish/${course._id}`,
         { isPublished: !course.isPublished },
         { withCredentials: true }
-      );
-
-      setCourses((prev) =>
-        prev.map((c) => (c._id === course._id ? res.data.course : c))
       );
 
       Swal.fire(
@@ -97,11 +92,20 @@ export default function AllCourses() {
         `Course ${course.isPublished ? "unpublished" : "published"} successfully`,
         "success"
       );
+
+      // Re-fetch courses to get updated data
+      fetchCourses();
+
     } catch (err) {
-      Swal.fire("Error", err.response?.data?.message || "Something went wrong", "error");
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Something went wrong",
+        "error"
+      );
     }
   };
 
+  // Delete course
   const handleDelete = async (courseId) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
@@ -120,6 +124,7 @@ export default function AllCourses() {
       });
 
       Swal.fire("Deleted!", "The course was deleted successfully.", "success");
+
       setCourses((prev) => prev.filter((c) => c._id !== courseId));
       setFiltered((prev) => prev.filter((c) => c._id !== courseId));
     } catch (err) {
@@ -131,6 +136,7 @@ export default function AllCourses() {
     }
   };
 
+  // View course details
   const handleViewCourse = (course) => {
     setSelectedCourse(course);
     setOpen(true);
@@ -177,13 +183,6 @@ export default function AllCourses() {
         </TextField>
 
         <Box sx={{ flexGrow: 1 }} />
-        {/* <Button
-          variant="contained"
-          endIcon={<AddCircleIcon />}
-          onClick={() => navigate("/instructor/create-course")}
-        >
-          Add Course
-        </Button> */}
       </Stack>
 
       {message && <Typography color="error">{message}</Typography>}
@@ -266,7 +265,7 @@ export default function AllCourses() {
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
 
-      {/* ✅ Course Preview Popup */}
+      {/* Course Preview Popup */}
       <CourseDetailsPopup
         open={open}
         handleClose={handleClose}

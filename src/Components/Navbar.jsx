@@ -26,23 +26,25 @@ const Navbar = () => {
   }, []);
 
   // Fetch profile image whenever user changes
-  useEffect(() => {
-    const fetchProfileImage = async () => {
-      if (!user) return;
-      try {
-        const res = await fetch("http://localhost:5000/api/profile", {
-          credentials: "include",
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        setProfileImage(data.image || null);
-      } catch (err) {
-        console.error("Failed to fetch profile image", err);
-      }
-    };
+// Fetch profile image whenever user changes
+useEffect(() => {
+  const fetchProfileImage = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch("http://localhost:5000/api/profile", {
+        credentials: "include",
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      // Access the nested profile object
+      setProfileImage(data.profile?.image || null);
+    } catch (err) {
+      console.error("Failed to fetch profile image", err);
+    }
+  };
 
-    fetchProfileImage();
-  }, [user]);
+  fetchProfileImage();
+}, [user]);
 
   // Close sidebar on overlay click
   const handleSidebarClose = (e) => {
@@ -98,12 +100,12 @@ const Navbar = () => {
           {/* Right icons */}
           <div className="flex items-center gap-4">
             {/* Notification Icon */}
-            <div className="relative cursor-pointer">
+            {/* <div className="relative cursor-pointer">
               <FaBell size={22} />
               <span className="absolute top-0 right-0 w-5 h-5 text-xs flex items-center justify-center rounded-full bg-green-500 text-white">
                 0
               </span>
-            </div>
+            </div> */}
 
             {/* User Dropdown */}
             <div className="relative">

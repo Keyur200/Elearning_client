@@ -24,7 +24,7 @@ const AdminHeader = ({ admin }) => {
         });
         if (!res.ok) return;
         const data = await res.json();
-        setProfileImage(data.image || null);
+        setProfileImage(data.profile.image || null);
       } catch (err) {
         console.error("Failed to fetch profile image", err);
       }

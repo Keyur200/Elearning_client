@@ -67,7 +67,7 @@ const CourseCard = ({ course }) => {
 
         if (!res.ok) return;
         const data = await res.json();
-        setProfileImage(data.image || null);
+        setProfileImage(data.profile.image || null);
       } catch (err) {
         console.error("Failed to fetch instructor profile image", err);
       }

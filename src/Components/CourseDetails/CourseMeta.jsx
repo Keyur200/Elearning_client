@@ -23,7 +23,7 @@ const CourseMeta = ({ course }) => {
         if (!res.ok) return;
 
         const data = await res.json();
-        setProfileImage(data.image || null);
+        setProfileImage(data.profile.image || null);
       } catch (error) {
         console.error("Failed to load instructor image", error);
       }

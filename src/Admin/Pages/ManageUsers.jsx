@@ -32,7 +32,7 @@ const ManageUsers = () => {
       setLoading(true);
       const res = await fetch("http://localhost:5000/auth/users", {
         method: "GET",
-        credentials: "include", // Include cookies for auth
+        credentials: "include",
       });
 
       if (res.status === 401) {
@@ -69,14 +69,14 @@ const ManageUsers = () => {
     setSelectedUser(null);
   };
 
-  // Change user role (with authentication)
+  // Change user role
   const handleChangeRole = async () => {
     if (!selectedUser || !roleName) return;
 
     try {
       const res = await fetch("http://localhost:5000/auth/change-role", {
         method: "PUT",
-        credentials: "include", // Include auth cookie
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -93,10 +93,8 @@ const ManageUsers = () => {
 
       if (!res.ok) throw new Error("Failed to change user role");
 
-      // Close popup immediately
       handleClose();
 
-      // Show success message and refresh list
       Swal.fire({
         icon: "success",
         title: "Role Updated!",
@@ -105,7 +103,7 @@ const ManageUsers = () => {
         showConfirmButton: false,
       });
 
-      fetchUsers(); // Reload user list
+      fetchUsers();
     } catch (error) {
       console.error(error);
       Swal.fire("Error", "Failed to update role", "error");
@@ -130,18 +128,10 @@ const ManageUsers = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>
-                <strong>Name</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Email</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Role</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Actions</strong>
-              </TableCell>
+              <TableCell><strong>Name</strong></TableCell>
+              <TableCell><strong>Email</strong></TableCell>
+              <TableCell><strong>Role</strong></TableCell>
+              <TableCell><strong>Actions</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -152,14 +142,17 @@ const ManageUsers = () => {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.role}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      size="small"
-                      onClick={() => handleEditClick(user)}
-                    >
-                      Edit
-                    </Button>
+                    {/* Only show Edit button if user is not admin */}
+                    {user.role !== "Admin" && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        onClick={() => handleEditClick(user)}
+                      >
+                        Edit
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -201,7 +194,6 @@ const ManageUsers = () => {
                 onChange={(e) => setRoleName(e.target.value)}
                 fullWidth
               >
-                {/* <MenuItem value="Admin">Admin</MenuItem> */}
                 <MenuItem value="Instructor">Instructor</MenuItem>
                 <MenuItem value="User">User</MenuItem>
               </TextField>
@@ -220,4 +212,3 @@ const ManageUsers = () => {
 };
 
 export default ManageUsers;
-
